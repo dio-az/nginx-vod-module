@@ -255,10 +255,6 @@ static bool_t initialized = FALSE;
 
 void
 audio_filter_process_init(vod_log_t* log) {
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 18, 100)
-	avfilter_register_all();
-#endif
-
 	buffersrc_filter = avfilter_get_by_name(BUFFERSRC_FILTER_NAME);
 	if (buffersrc_filter == NULL) {
 		vod_log_error(
@@ -299,11 +295,7 @@ audio_filter_init_source(
 		decoder->time_base.den,
 		decoder->sample_rate,
 		av_get_sample_fmt_name(decoder->sample_fmt),
-#if LIBAVFILTER_VERSION_INT >= AV_VERSION_INT(8, 44, 100)
 		decoder->ch_layout.u.mask
-#else
-		decoder->channel_layout
-#endif
 	);
 
 	avrc = avfilter_graph_create_filter(
@@ -380,7 +372,11 @@ audio_filter_init_sink(
 	out_sample_fmts[0] = sink->encoder->format;
 	out_sample_fmts[1] = -1;
 
-#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(59, 36, 100)
+#if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(59, 36, 100)
+	avrc = av_opt_set_int_list(
+		sink->buffer_sink, BUFFERSINK_PARAM_SAMPLE_FORMATS, out_sample_fmts, -1, AV_OPT_SEARCH_CHILDREN
+	);
+#else
 	avrc = av_opt_set_array(
 		sink->buffer_sink,
 		BUFFERSINK_PARAM_SAMPLE_FORMATS,
@@ -389,10 +385,6 @@ audio_filter_init_sink(
 		1,
 		AV_OPT_TYPE_SAMPLE_FMT,
 		out_sample_fmts
-	);
-#else
-	avrc = av_opt_set_int_list(
-		sink->buffer_sink, BUFFERSINK_PARAM_SAMPLE_FORMATS, out_sample_fmts, -1, AV_OPT_SEARCH_CHILDREN
 	);
 #endif
 	if (avrc < 0) {
@@ -409,7 +401,11 @@ audio_filter_init_sink(
 	out_channel_layouts[0] = channel_layout;
 	out_channel_layouts[1] = -1;
 
-#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(59, 36, 100)
+#if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(59, 36, 100)
+	avrc = av_opt_set_int_list(
+		sink->buffer_sink, BUFFERSINK_PARAM_CHANNEL_LAYOUTS, out_channel_layouts, -1, AV_OPT_SEARCH_CHILDREN
+	);
+#else
 	avrc = av_opt_set_array(
 		sink->buffer_sink,
 		BUFFERSINK_PARAM_CHANNEL_LAYOUTS,
@@ -418,10 +414,6 @@ audio_filter_init_sink(
 		1,
 		AV_OPT_TYPE_CHLAYOUT,
 		out_channel_layouts
-	);
-#else
-	avrc = av_opt_set_int_list(
-		sink->buffer_sink, BUFFERSINK_PARAM_CHANNEL_LAYOUTS, out_channel_layouts, -1, AV_OPT_SEARCH_CHILDREN
 	);
 #endif
 	if (avrc < 0) {
@@ -438,13 +430,13 @@ audio_filter_init_sink(
 	out_sample_rates[0] = sample_rate;
 	out_sample_rates[1] = -1;
 
-#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(59, 36, 100)
-	avrc = av_opt_set_array(
-		sink->buffer_sink, BUFFERSINK_PARAM_SAMPLE_RATES, AV_OPT_SEARCH_CHILDREN, 0, 1, AV_OPT_TYPE_INT, out_sample_rates
-	);
-#else
+#if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(59, 36, 100)
 	avrc = av_opt_set_int_list(
 		sink->buffer_sink, BUFFERSINK_PARAM_SAMPLE_RATES, out_sample_rates, -1, AV_OPT_SEARCH_CHILDREN
+	);
+#else
+	avrc = av_opt_set_array(
+		sink->buffer_sink, BUFFERSINK_PARAM_SAMPLE_RATES, AV_OPT_SEARCH_CHILDREN, 0, 1, AV_OPT_TYPE_INT, out_sample_rates
 	);
 #endif
 	if (avrc < 0) {
@@ -743,13 +735,8 @@ audio_filter_alloc_state(
 			goto end;
 		}
 	} else {
-#if LIBAVFILTER_VERSION_INT >= AV_VERSION_INT(8, 44, 100)
 		encoder_params.channels = sink_link->ch_layout.nb_channels;
 		encoder_params.channel_layout = sink_link->ch_layout.u.mask;
-#else
-		encoder_params.channels = sink_link->channels;
-		encoder_params.channel_layout = sink_link->channel_layout;
-#endif
 		encoder_params.sample_rate = sink_link->sample_rate;
 		encoder_params.timescale = sink_link->time_base.den;
 		encoder_params.bitrate = output_track->media_info.bitrate;

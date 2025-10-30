@@ -59,9 +59,7 @@ static codec_id_mapping_t codec_mappings[] = {
 	{VOD_CODEC_ID_HEVC, AV_CODEC_ID_H265, "h265"},
 	{VOD_CODEC_ID_VP8, AV_CODEC_ID_VP8, "vp8"},
 	{VOD_CODEC_ID_VP9, AV_CODEC_ID_VP9, "vp9"},
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 89, 100)
 	{VOD_CODEC_ID_AV1, AV_CODEC_ID_AV1, "av1"},
-#endif
 };
 
 void
@@ -70,9 +68,6 @@ thumb_grabber_process_init(vod_log_t* log) {
 	codec_id_mapping_t* mapping_cur;
 	codec_id_mapping_t* mapping_end;
 
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 18, 100)
-	avcodec_register_all();
-#endif
 	vod_memzero(decoder_codec, sizeof(decoder_codec));
 
 	encoder_codec = avcodec_find_encoder(AV_CODEC_ID_MJPEG);

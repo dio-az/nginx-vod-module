@@ -122,7 +122,7 @@ If you wish to make use of the following features:
 - Thumbnail capture
 - Playback rate change - 0.5x up to 2x
 
-You will also need to install the [`ffmpeg`](https://ffmpeg.org).
+You will also need to install the [`ffmpeg`](https://ffmpeg.org) v6+.
 
 #### Quick start
 

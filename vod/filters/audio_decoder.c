@@ -6,10 +6,6 @@ static bool_t initialized = FALSE;
 
 void
 audio_decoder_process_init(vod_log_t* log) {
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 18, 100)
-	avcodec_register_all();
-#endif
-
 	decoder_codec = avcodec_find_decoder(AV_CODEC_ID_AAC);
 	if (decoder_codec == NULL) {
 		vod_log_error(
@@ -56,12 +52,7 @@ audio_decoder_init_decoder(audio_decoder_state_t* state, media_info_t* media_inf
 	decoder->extradata = media_info->extra_data.data;
 	decoder->extradata_size = media_info->extra_data.len;
 
-#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 23, 100)
 	av_channel_layout_from_mask(&decoder->ch_layout, media_info->u.audio.channel_layout);
-#else
-	decoder->channels = media_info->u.audio.channels;
-	decoder->channel_layout = media_info->u.audio.channel_layout;
-#endif
 
 	decoder->bits_per_coded_sample = media_info->u.audio.bits_per_sample;
 	decoder->sample_rate = media_info->u.audio.sample_rate;

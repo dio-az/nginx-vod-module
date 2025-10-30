@@ -50,13 +50,7 @@ volume_map_calc_frame(request_context_t* request_context, AVFrame* frame, volume
 	const float* end;
 	double sum_squares;
 	double sample;
-	int channels;
-
-#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 23, 100)
-	channels = frame->ch_layout.nb_channels;
-#else
-	channels = frame->channels;
-#endif
+	int channels = frame->ch_layout.nb_channels;
 
 	switch (frame->format) {
 	case AV_SAMPLE_FMT_FLTP:
