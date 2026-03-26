@@ -573,7 +573,8 @@ thumb_grabber_resize_frame(thumb_grabber_state_t* state) {
 
 	output_frame->width = state->encoder->width;
 	output_frame->height = state->encoder->height;
-	output_frame->format = AV_PIX_FMT_YUV420P;
+	// TODO: migrate to AV_PIX_FMT_YUV420P + AVCOL_RANGE_JPEG
+	output_frame->format = AV_PIX_FMT_YUVJ420P;
 
 	sws_ctx = sws_getContext(
 		input_frame->width,
