@@ -4,6 +4,7 @@
 #include <libavcodec/avcodec.h>
 
 #if (VOD_HAVE_LIB_SW_SCALE)
+#include <math.h>
 #include <libswscale/swscale.h>
 #include <libavutil/imgutils.h>
 #endif // VOD_HAVE_LIB_SW_SCALE
@@ -14,6 +15,8 @@ typedef struct {
 	request_context_t* request_context;
 	write_callback_t write_callback;
 	void* write_context;
+	uint32_t requested_width;
+	uint32_t requested_height;
 
 	// libavcodec
 	AVCodecContext* decoder;
@@ -313,8 +316,6 @@ thumb_grabber_init_state(
 	thumb_grabber_state_t* state;
 	vod_pool_cleanup_t* cln;
 	vod_status_t rc;
-	uint32_t output_width;
-	uint32_t output_height;
 	uint32_t frame_index;
 
 	if (decoder_codec[track->media_info.codec_id] == NULL) {
@@ -377,39 +378,8 @@ thumb_grabber_init_state(
 	if (rc != VOD_OK) {
 		return rc;
 	}
-
-	if (request_params->width != 0) {
-		output_width = request_params->width;
-		if (request_params->height != 0) {
-			output_height = request_params->height;
-		} else {
-			output_height = ((uint64_t)track->media_info.u.video.height * request_params->width)
-			              / track->media_info.u.video.width;
-		}
-	} else {
-		if (request_params->height != 0) {
-			output_width = ((uint64_t)track->media_info.u.video.width * request_params->height)
-			             / track->media_info.u.video.height;
-			output_height = request_params->height;
-		} else {
-			output_width = track->media_info.u.video.width;
-			output_height = track->media_info.u.video.height;
-		}
-	}
-
-	if (output_width <= 0 || output_height <= 0) {
-		vod_log_error(
-			VOD_LOG_ERR, request_context->log, 0, "thumb_grabber_init_state: output width/height is zero"
-		);
-		return VOD_BAD_REQUEST;
-	}
-
-	// TODO: postpone the initialization of the encoder to after a frame is decoded
-
-	rc = thumb_grabber_init_encoder(request_context, output_width, output_height, &state->encoder);
-	if (rc != VOD_OK) {
-		return rc;
-	}
+	state->requested_width = request_params->width;
+	state->requested_height = request_params->height;
 
 	state->decoded_frame = av_frame_alloc();
 	if (state->decoded_frame == NULL) {
@@ -565,6 +535,59 @@ thumb_grabber_decode_frame(thumb_grabber_state_t* state, u_char* buffer) {
 	return VOD_OK;
 }
 
+static vod_status_t
+thumb_grabber_get_output_size(thumb_grabber_state_t* state, int* width, int* height) {
+	int output_width;
+	int output_height;
+#if (VOD_HAVE_LIB_SW_SCALE)
+	AVRational aspect;
+	double aspect_d;
+	double display_width;
+	double display_height;
+
+	// use the bitstream sample aspect ratio (e.g. AVC/HEVC VUI), or default to square pixels
+	// TODO: also honor the container SAR (e.g. the pasp atom) as a fallback
+	aspect = state->decoded_frame->sample_aspect_ratio;
+	if (aspect.num <= 0 || aspect.den <= 0) {
+		aspect.num = 1;
+		aspect.den = 1;
+	}
+
+	aspect_d = (double)aspect.num / (double)aspect.den;
+	display_width = (double)state->decoded_frame->width * aspect_d;
+	display_height = (double)state->decoded_frame->height;
+
+	if (state->requested_width != 0 && state->requested_height != 0) {
+		output_width = state->requested_width;
+		output_height = state->requested_height;
+	} else if (state->requested_width != 0) {
+		output_width = state->requested_width;
+		output_height = lround(state->requested_width * display_height / display_width);
+	} else if (state->requested_height != 0) {
+		output_width = lround(state->requested_height * display_width / display_height);
+		output_height = state->requested_height;
+	} else {
+		output_width = lround(display_width);
+		output_height = state->decoded_frame->height;
+	}
+#else
+	output_width = state->decoded_frame->width;
+	output_height = state->decoded_frame->height;
+#endif
+
+	if (output_width <= 0 || output_height <= 0) {
+		vod_log_error(
+			VOD_LOG_ERR, state->request_context->log, 0, "thumb_grabber_get_output_size: output width/height is zero"
+		);
+		return VOD_BAD_REQUEST;
+	}
+
+	*width = output_width;
+	*height = output_height;
+
+	return VOD_OK;
+}
+
 #if (VOD_HAVE_LIB_SW_SCALE)
 static vod_status_t
 thumb_grabber_resize_frame(thumb_grabber_state_t* state) {
@@ -653,6 +676,8 @@ static vod_status_t
 thumb_grabber_write_frame(thumb_grabber_state_t* state) {
 	vod_status_t rc;
 	int avrc;
+	int width;
+	int height;
 
 	if (state->missing_frames > 0) {
 		rc = thumb_grabber_decode_flush(state);
@@ -666,6 +691,18 @@ thumb_grabber_write_frame(thumb_grabber_state_t* state) {
 			VOD_LOG_ERR, state->request_context->log, 0, "thumb_grabber_write_frame: no frames were decoded"
 		);
 		return VOD_UNEXPECTED;
+	}
+
+	if (!state->encoder) {
+		rc = thumb_grabber_get_output_size(state, &width, &height);
+		if (rc != VOD_OK) {
+			return rc;
+		}
+
+		rc = thumb_grabber_init_encoder(state->request_context, width, height, &state->encoder);
+		if (rc != VOD_OK) {
+			return rc;
+		}
 	}
 
 #if (VOD_HAVE_LIB_SW_SCALE)
