@@ -1,0 +1,15 @@
+{
+  "id": "542424b95d4941b8aa7eb2a57b0d1e02",
+  "sequences": [
+    {
+      "id": "1500k",
+      "clips": [
+        {
+          "type": "source",
+          "path": "cosmos-laundromat/cosmos-laundromat-avc-aac-1500k.mp4"
+        }
+      ],
+      "roles": ["main"]
+    }
+  ]
+}
