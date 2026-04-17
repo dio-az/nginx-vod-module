@@ -1,0 +1,147 @@
+{
+  "id": "f94832a5cd428328fb4b06a5f6e983fe",
+  "sequences": [
+    {
+      "id": "avc_450k",
+      "clips": [
+        {
+          "type": "source",
+          "path": "meridian/meridian-avc-sdr-450k.mp4"
+        }
+      ],
+      "roles": ["main"]
+    },
+    {
+      "id": "avc_700k",
+      "clips": [
+        {
+          "type": "source",
+          "path": "meridian/meridian-avc-sdr-700k.mp4"
+        }
+      ],
+      "roles": ["main"]
+    },
+    {
+      "id": "avc_1400k",
+      "clips": [
+        {
+          "type": "source",
+          "path": "meridian/meridian-avc-sdr-1400k.mp4"
+        }
+      ],
+      "roles": ["main"]
+    },
+    {
+      "id": "avc_2200k",
+      "clips": [
+        {
+          "type": "source",
+          "path": "meridian/meridian-avc-sdr-2200k.mp4"
+        }
+      ],
+      "roles": ["main"]
+    },
+    {
+      "id": "avc_5000k",
+      "clips": [
+        {
+          "type": "source",
+          "path": "meridian/meridian-avc-sdr-5000k.mp4"
+        }
+      ],
+      "roles": ["main"]
+    },
+    {
+      "id": "pq_6500k",
+      "clips": [
+        {
+          "type": "source",
+          "path": "meridian/meridian-hevc-pq-6500k.mp4"
+        }
+      ],
+      "roles": ["main"]
+    },
+    {
+      "id": "pq_9000k",
+      "clips": [
+        {
+          "type": "source",
+          "path": "meridian/meridian-hevc-pq-9000k.mp4"
+        }
+      ],
+      "roles": ["main"]
+    },
+    {
+      "id": "pq_18000k",
+      "clips": [
+        {
+          "type": "source",
+          "path": "meridian/meridian-hevc-pq-18000k.mp4"
+        }
+      ],
+      "roles": ["main"]
+    },
+    {
+      "id": "hlg_6500k",
+      "clips": [
+        {
+          "type": "source",
+          "path": "meridian/meridian-hevc-hlg-6500k.mp4"
+        }
+      ],
+      "roles": ["main"]
+    },
+    {
+      "id": "pq_5000k",
+      "clips": [
+        {
+          "type": "source",
+          "path": "meridian/meridian-av1-pq-5000k.mp4"
+        }
+      ],
+      "roles": ["main"]
+    },
+    {
+      "id": "pq_7000k",
+      "clips": [
+        {
+          "type": "source",
+          "path": "meridian/meridian-av1-pq-7000k.mp4"
+        }
+      ],
+      "roles": ["main"]
+    },
+    {
+      "id": "pq_14000k",
+      "clips": [
+        {
+          "type": "source",
+          "path": "meridian/meridian-av1-pq-14000k.mp4"
+        }
+      ],
+      "roles": ["main"]
+    },
+    {
+      "id": "aac_128k",
+      "clips": [
+        {
+          "type": "source",
+          "path": "meridian/meridian-aac-128k.mp4"
+        }
+      ],
+      "language": "eng",
+      "roles": ["main"]
+    },
+    {
+      "id": "eac3_384k",
+      "clips": [
+        {
+          "type": "source",
+          "path": "meridian/meridian-eac3-384k.mp4"
+        }
+      ],
+      "language": "eng",
+      "roles": ["main"]
+    }
+  ]
+}
