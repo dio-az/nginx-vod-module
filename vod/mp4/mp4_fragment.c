@@ -79,7 +79,6 @@ mp4_fragment_write_video_trun_atom(
 	input_frame_t* cur_frame;
 	input_frame_t* last_frame;
 	uint32_t initial_pts_delay = 0;
-	int32_t pts_delay;
 	size_t atom_size = ATOM_HEADER_SIZE
 	                 + sizeof(trun_atom_t)
 	                 + sequence->total_frame_count * sizeof(trun_video_frame_t);
@@ -113,8 +112,7 @@ mp4_fragment_write_video_trun_atom(
 			} else {
 				write_be32(p, 0x10000); // sample_flags = (non-key frame)
 			}
-			pts_delay = cur_frame->pts_delay - initial_pts_delay;
-			write_be32(p, pts_delay); // sample_composition_time_offset
+			write_be32(p, (int32_t)(cur_frame->pts_delay - initial_pts_delay)); // sample_composition_time_offset
 		}
 	}
 	return p;
