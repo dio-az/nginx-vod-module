@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
 
-FROM alpine:3.23.3 AS build
+FROM alpine:3.23 AS build
 
 ARG FFMPEG_VERSION=8.1
-ARG NGINX_VERSION=1.29.6
+ARG NGINX_VERSION=1.30
 
 RUN apk --no-cache add \
 		build-base \
@@ -13,10 +13,12 @@ RUN apk --no-cache add \
 		libxml2-dev \
 		nasm \
 		fdk-aac-dev \
-		openssl-dev \
-	&& mkdir /ffmpeg /nginx \
-	&& wget -qO- https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.gz | tar -xz --strip-components 1 -C /ffmpeg \
-	&& wget -qO- https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar -xz --strip-components 1 -C /nginx
+		openssl-dev
+
+COPY scripts/fetch_latest.sh /usr/local/bin/fetch_latest
+
+RUN fetch_latest https://ffmpeg.org/releases ffmpeg-${FFMPEG_VERSION} ffmpeg \
+	&& fetch_latest https://nginx.org/download nginx-${NGINX_VERSION} nginx
 
 WORKDIR /ffmpeg
 
@@ -76,7 +78,7 @@ RUN /nginx-vod-module/scripts/build_basic.sh \
 		--with-ld-opt='-L/opt/ffmpeg/lib -Wl,-rpath,/opt/ffmpeg/lib' \
 	&& make install
 
-FROM alpine:3.23.3
+FROM alpine:3.23
 
 LABEL maintainer="Diogo Azevedo <diogoazevedos@gmail.com>"
 

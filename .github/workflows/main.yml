@@ -20,30 +20,32 @@ jobs:
       fail-fast: false
       matrix:
         nginx-version:
-          - 1.28.2
-          - 1.29.6
+          - '1.29'
+          - '1.30'
         ffmpeg-version:
           - null
-          - 6.1.4
-          - 7.1.3
+          - '6.1'
+          - '7.1'
           - '8.1'
         build-mode:
           - --add-module
           - --add-dynamic-module
     steps:
       - run: sudo apt-get update -qq
-      - run: mkdir nginx ffmpeg
       - run: |
           sudo apt-get install -y \
-            curl \
+            wget \
             build-essential \
             libfdk-aac-dev \
             libssl-dev \
             libxml2-dev \
             nasm \
             pkg-config
+      - uses: actions/checkout@v6
+        with:
+          path: nginx-vod-module
       - if: matrix.ffmpeg-version != null
-        run: curl -sL https://ffmpeg.org/releases/ffmpeg-${{ matrix.ffmpeg-version }}.tar.gz | tar -xz --strip-components 1 -C ffmpeg
+        run: ./nginx-vod-module/scripts/fetch_latest.sh https://ffmpeg.org/releases ffmpeg-${{ matrix.ffmpeg-version }} ffmpeg
       - if: matrix.ffmpeg-version != null
         working-directory: ffmpeg
         run: |
@@ -59,10 +61,7 @@ jobs:
           make -j$(nproc)
           sudo make install
       - run: sudo ldconfig
-      - uses: actions/checkout@v6
-        with:
-          path: nginx-vod-module
-      - run: curl -sL https://nginx.org/download/nginx-${{ matrix.nginx-version }}.tar.gz | tar -xz --strip-components 1 -C nginx
+      - run: ./nginx-vod-module/scripts/fetch_latest.sh https://nginx.org/download nginx-${{ matrix.nginx-version }} nginx
       - working-directory: nginx
         run: |
           ../nginx-vod-module/scripts/build_basic.sh \
