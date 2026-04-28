@@ -1,5 +1,5 @@
 # NGINX-based VOD Packager
-## nginx-vod-module [![CI](https://github.com/diogoazevedos/nginx-vod-module/actions/workflows/main.yml/badge.svg)](https://github.com/diogoazevedos/nginx-vod-module/actions/workflows/main.yml)
+## nginx-vod-module [![CI](https://github.com/dio-az/nginx-vod-module/actions/workflows/main.yml/badge.svg)](https://github.com/dio-az/nginx-vod-module/actions/workflows/main.yml)
 
 ### Features
 
