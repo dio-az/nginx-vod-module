@@ -5,3 +5,4 @@
 !sample
 !static
 !scripts/build_basic.sh
+!scripts/fetch_latest.sh
