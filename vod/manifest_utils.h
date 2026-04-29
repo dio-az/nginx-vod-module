@@ -12,7 +12,7 @@
 #define ADAPTATION_SETS_FLAG_MULTI_CODEC \
 	(ADAPTATION_SETS_FLAG_MULTI_AUDIO_CODEC | ADAPTATION_SETS_FLAG_MULTI_VIDEO_CODEC)
 
-#define MANIFEST_UTILS_TRACKS_SPEC_MAX_SIZE (sizeof("-f-v-f-a") - 1 + VOD_INT32_LEN * 4)
+#define MANIFEST_UTILS_TRACK_SPEC_MAX_SIZE ((sizeof("-f-v") - 1) + VOD_INT32_LEN * 2)
 
 // enums
 enum { // NOTE: must match media type in order
@@ -51,8 +51,8 @@ vod_status_t manifest_utils_build_request_params_string(
 	vod_str_t* result
 );
 
-u_char* manifest_utils_append_tracks_spec(
-	u_char* p, media_track_t** tracks, uint32_t track_count, bool_t write_sequence_index
+u_char* manifest_utils_append_track_spec(
+	u_char* p, media_sequence_t* sequence, media_track_t* track, bool_t write_sequence
 );
 
 vod_status_t manifest_utils_get_adaptation_sets(

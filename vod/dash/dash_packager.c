@@ -180,7 +180,7 @@ static const u_char mpd_period_footer[] = "  </Period>\n";
 
 static const u_char mpd_footer[] = "</MPD>\n";
 
-#define MAX_TRACK_SPEC_LENGTH (sizeof("f-v-p") + 3 * VOD_INT32_LEN)
+#define MAX_TRACK_SPEC_LENGTH (sizeof("f-v") + 2 * VOD_INT32_LEN)
 #define MAX_CLIP_SPEC_LENGTH (sizeof("c-") + VOD_INT32_LEN)
 #define MAX_INDEX_SHIFT_LENGTH (sizeof("i-") + VOD_INT32_LEN)
 #define MAX_MIME_TYPE_SIZE (sizeof("video/webm") - 1)
@@ -352,22 +352,9 @@ static void
 dash_packager_get_track_spec(
 	vod_str_t* result, media_set_t* media_set, media_sequence_t* sequence, media_track_t* track
 ) {
-	u_char* p = result->data;
-	const u_char media_type_letter[] = {'v', 'a'}; // must match MEDIA_TYPE_* order
-
-	if (media_set->has_multi_sequences && sequence->index != INVALID_SEQUENCE_INDEX) {
-		if (sequence->id.len != 0 && sequence->id.len < VOD_INT32_LEN) {
-			p = vod_sprintf(p, "s%V", &sequence->id);
-		} else {
-			p = vod_sprintf(p, "f%uD", sequence->index + 1);
-		}
-		*p++ = '-';
-	}
-
-	if (track->media_info.media_type <= MEDIA_TYPE_AUDIO) {
-		*p++ = media_type_letter[track->media_info.media_type];
-		p = vod_sprintf(p, "%uD", track->index + 1);
-	}
+	u_char* p = manifest_utils_append_track_spec(
+		result->data, sequence, track, media_set->has_multi_sequences && sequence->index != INVALID_SEQUENCE_INDEX
+	);
 
 	result->len = p - result->data;
 }
@@ -851,10 +838,6 @@ dash_packager_write_mpd_period(u_char* p, write_period_context_t* context) {
 
 			dash_packager_get_track_spec(&representation_id, media_set, cur_sequence, reference_track);
 
-			if (representation_id.len > 0 && representation_id.data[representation_id.len - 1] == '-') {
-				representation_id.len--;
-			}
-
 			p = vod_sprintf(p, mpd_adaptation_header_subtitle_vtt, adapt_id++, lang_str);
 
 			if (reference_track->media_info.tags.label.len > 0) {
@@ -973,11 +956,6 @@ dash_packager_write_mpd_period(u_char* p, write_period_context_t* context) {
 				break;
 
 			case MEDIA_TYPE_SUBTITLE:
-				if (representation_id.len > 0
-				    && representation_id.data[representation_id.len - 1] == '-') {
-					representation_id.len--;
-				}
-
 				p = vod_sprintf(p, mpd_representation_header_subtitle_smpte_tt, &representation_id);
 				break;
 			}

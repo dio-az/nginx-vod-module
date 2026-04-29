@@ -314,36 +314,26 @@ manifest_utils_build_request_params_string(
 	return VOD_OK;
 }
 
+static const u_char media_type_letter[] = {'v', 'a'}; // must match MEDIA_TYPE_* order
+
 u_char*
-manifest_utils_append_tracks_spec(
-	u_char* p, media_track_t** tracks, uint32_t track_count, bool_t write_sequence_index
+manifest_utils_append_track_spec(
+	u_char* p, media_sequence_t* sequence, media_track_t* track, bool_t write_sequence
 ) {
-	media_sequence_t* cur_sequence;
-	media_track_t** last_track_ptr = tracks + track_count;
-	media_track_t** cur_track_ptr;
-	media_track_t* cur_track;
-	const u_char media_type_letter[] = {'v', 'a'}; // must match MEDIA_TYPE_* order
-
-	for (cur_track_ptr = tracks; cur_track_ptr < last_track_ptr; cur_track_ptr++) {
-		cur_track = *cur_track_ptr;
-		if (cur_track == NULL) {
-			continue;
+	if (write_sequence) {
+		if (sequence->id.len != 0 && sequence->id.len < VOD_INT32_LEN) {
+			p = vod_sprintf(p, "s%V", &sequence->id);
+		} else {
+			p = vod_sprintf(p, "f%uD", sequence->index + 1);
 		}
+	}
 
-		if (write_sequence_index) {
-			cur_sequence = cur_track->file_info.source->sequence;
-			if (cur_sequence->id.len != 0 && cur_sequence->id.len < VOD_INT32_LEN) {
-				p = vod_sprintf(p, "-s%V", &cur_sequence->id);
-			} else {
-				p = vod_sprintf(p, "-f%uD", cur_sequence->index + 1);
-			}
-		}
-
-		if (cur_track->media_info.media_type <= MEDIA_TYPE_AUDIO) {
+	if (track->media_info.media_type <= MEDIA_TYPE_AUDIO) {
+		if (write_sequence) {
 			*p++ = '-';
-			*p++ = media_type_letter[cur_track->media_info.media_type];
-			p = vod_sprintf(p, "%uD", cur_track->index + 1);
 		}
+		*p++ = media_type_letter[track->media_info.media_type];
+		p = vod_sprintf(p, "%uD", track->index + 1);
 	}
 
 	return p;

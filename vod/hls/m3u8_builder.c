@@ -153,43 +153,33 @@ m3u8_builder_append_iframe_string(
 }
 
 static vod_status_t
-m3u8_builder_build_tracks_spec(
+m3u8_builder_build_track_spec(
 	request_context_t* request_context, media_set_t* media_set, vod_str_t* suffix, vod_str_t* result
 ) {
-	media_track_t** cur_track_ptr;
-	media_track_t** tracks_end;
-	media_track_t** tracks;
-	media_track_t* cur_track;
+	media_track_t* track = media_set->filtered_tracks;
 	u_char* p;
-	size_t result_size = suffix->len
-	                   + ((sizeof("-x") - 1) + VOD_INT32_LEN)
-	                   + ((sizeof("-v") - 1) + VOD_INT32_LEN) * media_set->total_track_count;
+	size_t result_size =
+		suffix->len + ((sizeof("-x") - 1) + VOD_INT32_LEN) + MANIFEST_UTILS_TRACK_SPEC_MAX_SIZE;
 
 	if (media_set->has_multi_sequences) {
-		result_size += (sizeof("-f") - 1 + VOD_INT32_LEN) * media_set->total_track_count;
+		result_size += (sizeof("-f") - 1) + VOD_INT32_LEN;
 	}
 
-	// allocate the result buffer and the track ptrs array
-	tracks =
-		vod_alloc(request_context->pool, sizeof(tracks[0]) * media_set->total_track_count + result_size);
-	if (tracks == NULL) {
+	// allocate the result buffer
+	p = vod_alloc(request_context->pool, result_size);
+	if (p == NULL) {
 		vod_log_debug0(
 			VOD_LOG_DEBUG_LEVEL, request_context->log, 0, "m3u8_builder_build_tracks_spec: vod_alloc failed"
 		);
 		return VOD_ALLOC_FAILED;
 	}
 
-	// build the track ptrs array
-	tracks_end = tracks + media_set->total_track_count;
-	for (cur_track_ptr = tracks, cur_track = media_set->filtered_tracks; cur_track_ptr < tracks_end; cur_track_ptr++, cur_track++) {
-		*cur_track_ptr = cur_track;
-	}
-
 	// write the result
-	result->data = p = (u_char*)tracks_end;
+	result->data = p;
 
-	p = manifest_utils_append_tracks_spec(
-		p, tracks, media_set->total_track_count, media_set->has_multi_sequences
+	*p++ = '-'; // NOTE: assume has_multi_sequences is always `TRUE` for subtitles.
+	p = manifest_utils_append_track_spec(
+		p, track->file_info.source->sequence, track, media_set->has_multi_sequences
 	);
 
 	p = vod_copy(p, suffix->data, suffix->len);
@@ -237,7 +227,7 @@ m3u8_builder_build_iframe_playlist(
 	encryption_params.iv = NULL;
 
 	// build the required tracks string
-	rc = m3u8_builder_build_tracks_spec(request_context, media_set, &m3u8_ts_suffix, &ctx.name_suffix);
+	rc = m3u8_builder_build_track_spec(request_context, media_set, &m3u8_ts_suffix, &ctx.name_suffix);
 	if (rc != VOD_OK) {
 		return rc;
 	}
@@ -527,7 +517,7 @@ m3u8_builder_build_index_playlist(
 		suffix = &m3u8_vtt_suffix;
 	}
 
-	rc = m3u8_builder_build_tracks_spec(request_context, media_set, suffix, &name_suffix);
+	rc = m3u8_builder_build_track_spec(request_context, media_set, suffix, &name_suffix);
 	if (rc != VOD_OK) {
 		return rc;
 	}
@@ -747,21 +737,10 @@ m3u8_builder_get_audio_codec_count(adaptation_sets_t* adaptation_sets, media_tra
 
 static u_char*
 m3u8_builder_append_index_url(
-	u_char* p, vod_str_t* prefix, media_set_t* media_set, media_track_t** tracks, vod_str_t* base_url
+	u_char* p, vod_str_t* prefix, media_set_t* media_set, media_track_t* track, vod_str_t* base_url
 ) {
-	media_track_t* track = NULL;
-	uint32_t media_type;
-	bool_t write_sequence_index;
+	bool_t write_sequence = media_set->has_multi_sequences;
 
-	// get the main track and sub track
-	for (media_type = 0; media_type < MEDIA_TYPE_COUNT; media_type++) {
-		if (tracks[media_type] != NULL) {
-			track = tracks[media_type];
-			break;
-		}
-	}
-
-	write_sequence_index = media_set->has_multi_sequences;
 	if (base_url->len != 0) {
 		// absolute url only
 		p = vod_copy(p, base_url->data, base_url->len);
@@ -770,7 +749,7 @@ m3u8_builder_append_index_url(
 				p = vod_copy(p, track->file_info.uri.data, track->file_info.uri.len);
 
 				// no need to pass the sequence index since we have a direct uri
-				write_sequence_index = FALSE;
+				write_sequence = FALSE;
 			} else {
 				p = vod_copy(p, media_set->uri.data, media_set->uri.len);
 			}
@@ -779,7 +758,8 @@ m3u8_builder_append_index_url(
 	}
 
 	p = vod_copy(p, prefix->data, prefix->len);
-	p = manifest_utils_append_tracks_spec(p, tracks, MEDIA_TYPE_COUNT, write_sequence_index);
+	*p++ = '-'; // NOTE: assume has_multi_sequences is always `TRUE` for subtitles.
+	p = manifest_utils_append_track_spec(p, track->file_info.source->sequence, track, write_sequence);
 	p = vod_copy(p, m3u8_url_suffix, sizeof(m3u8_url_suffix) - 1);
 
 	return p;
@@ -993,7 +973,9 @@ m3u8_builder_write_media(
 		}
 
 		p = vod_copy(p, m3u8_media_uri, sizeof(m3u8_media_uri) - 1);
-		p = m3u8_builder_append_index_url(p, &conf->index_file_name_prefix, media_set, tracks, base_url);
+		p = m3u8_builder_append_index_url(
+			p, &conf->index_file_name_prefix, media_set, tracks[media_type], base_url
+		);
 		*p++ = '"';
 		*p++ = '\n';
 	}
@@ -1124,7 +1106,9 @@ m3u8_builder_write_variants(
 		*p++ = '\n';
 
 		// output the url
-		p = m3u8_builder_append_index_url(p, &conf->index_file_name_prefix, media_set, tracks, base_url);
+		p = m3u8_builder_append_index_url(
+			p, &conf->index_file_name_prefix, media_set, tracks[adaptation_set->type], base_url
+		);
 		*p++ = '\n';
 	}
 
@@ -1170,9 +1154,9 @@ m3u8_builder_write_iframe_variants(
 			&video->codec_name
 		);
 
-		// NOTE: while it is possible to use only the video track here, sending the audio makes the
-		// iframe list reference the same segments as the media playlist
-		p = m3u8_builder_append_index_url(p, &conf->iframes_file_name_prefix, media_set, tracks, base_url);
+		p = m3u8_builder_append_index_url(
+			p, &conf->iframes_file_name_prefix, media_set, tracks[adaptation_set->type], base_url
+		);
 		*p++ = '\"';
 
 		p = m3u8_builder_write_video_range(p, video);
@@ -1233,7 +1217,7 @@ m3u8_builder_build_master_playlist(
 	base_url_len = base_url->len
 	             + 1 // '/'
 	             + conf->index_file_name_prefix.len
-	             + MANIFEST_UTILS_TRACKS_SPEC_MAX_SIZE
+	             + MANIFEST_UTILS_TRACK_SPEC_MAX_SIZE
 	             + (sizeof(m3u8_url_suffix) - 1);
 
 	result_size = (sizeof(m3u8_header_base) - 1) + VOD_INT32_LEN;
