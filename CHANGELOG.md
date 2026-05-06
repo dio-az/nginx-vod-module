@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.1](https://github.com/dio-az/nginx-vod-module/compare/v1.7.0...v1.7.1) (2026-05-06)
+
+### Bug Fixes
+
+- Set thumb resize output format to YUVJ420P ([#94](https://github.com/dio-az/nginx-vod-module/pull/94))
+
 ## [1.7.0](https://github.com/dio-az/nginx-vod-module/compare/v1.6.0...v1.7.0) (2026-03-25)
 
 ### Features
