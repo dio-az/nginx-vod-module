@@ -3,7 +3,7 @@
 FROM alpine:3.23 AS build
 
 ARG FFMPEG_VERSION=8.1
-ARG NGINX_VERSION=1.30
+ARG NGINX_VERSION=1.31
 
 RUN apk --no-cache add \
 		build-base \
@@ -80,7 +80,7 @@ RUN /nginx-vod-module/scripts/build_basic.sh \
 
 FROM alpine:3.23
 
-LABEL maintainer="Diogo Azevedo <diogoazevedos@gmail.com>"
+LABEL maintainer="Diogo Azevedo <hi@dio-az.dev>"
 
 RUN apk --no-cache add \
 		zlib \
