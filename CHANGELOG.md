@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.2](https://github.com/dio-az/nginx-vod-module/compare/v1.7.1...v1.7.2) (2026-05-18)
+
+### Bug Fixes
+
+- Fix incorrect segment reporting for sources with offset ([#100](https://github.com/dio-az/nginx-vod-module/pull/100))
+- Skip headers without named field offsets ([#104](https://github.com/dio-az/nginx-vod-module/pull/104))
+
 ## [1.7.1](https://github.com/dio-az/nginx-vod-module/compare/v1.7.0...v1.7.1) (2026-05-06)
 
 ### Bug Fixes
