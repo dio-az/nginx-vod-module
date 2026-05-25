@@ -101,6 +101,13 @@ thumb_grabber_free_state(void* context) {
 	}
 	av_frame_free(&state->decoded_frame);
 	avcodec_free_context(&state->encoder);
+
+	// NOTE: detach pool-owned extradata before teardown. avcodec_free_context() would otherwise
+	// call free() on request-pool memory.
+	if (state->decoder != NULL) {
+		state->decoder->extradata = NULL;
+		state->decoder->extradata_size = 0;
+	}
 	avcodec_free_context(&state->decoder);
 }
 

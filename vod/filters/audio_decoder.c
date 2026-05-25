@@ -141,6 +141,12 @@ audio_decoder_init(
 
 void
 audio_decoder_free(audio_decoder_state_t* state) {
+	// NOTE: detach pool-owned extradata before teardown. avcodec_free_context() would otherwise
+	// call free() on request-pool memory.
+	if (state->decoder != NULL) {
+		state->decoder->extradata = NULL;
+		state->decoder->extradata_size = 0;
+	}
 	avcodec_free_context(&state->decoder);
 	av_frame_free(&state->decoded_frame);
 }
