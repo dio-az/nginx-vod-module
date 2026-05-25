@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.3](https://github.com/dio-az/nginx-vod-module/compare/v1.7.2...v1.7.3) (2026-05-25)
+
+### Bug Fixes
+
+- Detach pool-owned extradata before decoder teardown ([#109](https://github.com/dio-az/nginx-vod-module/pull/109))
+
 ## [1.7.2](https://github.com/dio-az/nginx-vod-module/compare/v1.7.1...v1.7.2) (2026-05-18)
 
 ### Bug Fixes
