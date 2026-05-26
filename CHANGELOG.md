@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.4](https://github.com/dio-az/nginx-vod-module/compare/v1.7.3...v1.7.4) (2026-05-26)
+
+### Bug Fixes
+
+- Fix HLS encryption method validation ([#110](https://github.com/dio-az/nginx-vod-module/pull/110))
+
 ## [1.7.3](https://github.com/dio-az/nginx-vod-module/compare/v1.7.2...v1.7.3) (2026-05-25)
 
 ### Bug Fixes
