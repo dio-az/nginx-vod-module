@@ -2,6 +2,7 @@
 #include <ngx_md5.h>
 #include "ngx_http_vod_submodule.h"
 #include "ngx_http_vod_utils.h"
+#include "vod/hls/hls_encryption.h"
 #include "vod/subtitle/webvtt_builder.h"
 #include "vod/hls/hls_muxer.h"
 #include "vod/mp4/mp4_muxer.h"
@@ -1237,19 +1238,26 @@ ngx_http_vod_hls_merge_loc_conf(
 
 	m3u8_builder_init_config(&conf->m3u8_config, base->segmenter.max_segment_duration);
 
-	if (conf->encryption_method != HLS_ENC_NONE && !base->drm_enabled) {
-		ngx_conf_log_error(
-			NGX_LOG_EMERG, cf, 0, "\"vod_drm_enabled\" must be set when \"vod_hls_encryption_method\" is not none"
-		);
-		return NGX_CONF_ERROR;
-	}
-
 	if (conf->encryption_method == HLS_ENC_SAMPLE_AES_CENC) {
 		ngx_conf_log_error(
 			NGX_LOG_WARN, cf, 0, "\"vod_hls_encryption_method\" sample-aes-cenc is deprecated, use sample-aes-ctr instead"
 		);
 
 		conf->encryption_method = HLS_ENC_SAMPLE_AES_CTR;
+	}
+
+	if (conf->encryption_method == HLS_ENC_SAMPLE_AES_CTR && !base->drm_enabled) {
+		ngx_conf_log_error(
+			NGX_LOG_EMERG, cf, 0, "\"vod_drm_enabled\" must be set when \"vod_hls_encryption_method\" is sample-aes-ctr"
+		);
+		return NGX_CONF_ERROR;
+	}
+
+	if (conf->encryption_method != HLS_ENC_NONE && base->secret_key == NULL && !base->drm_enabled) {
+		ngx_conf_log_error(
+			NGX_LOG_EMERG, cf, 0, "\"vod_secret_key\" or \"vod_drm_enabled\" must be set when \"vod_hls_encryption_method\" is not none"
+		);
+		return NGX_CONF_ERROR;
 	}
 
 	if (conf->encryption_method == HLS_ENC_SAMPLE_AES && conf->m3u8_config.m3u8_version < 5) {
