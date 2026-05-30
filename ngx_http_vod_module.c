@@ -5082,7 +5082,8 @@ ngx_http_vod_handle_thumb_redirect(ngx_http_vod_ctx_t* ctx, media_set_t* media_s
 
 	rc = ngx_http_vod_thumb_get_url(
 		&ctx->submodule_context,
-		media_set->has_multi_sequences ? (uint32_t)(1 << media_set->sequences[0].index) : 0xFFFFFFFF,
+		media_set->has_multi_sequences ? (uint64_t)(1ULL << media_set->sequences[0].index)
+									   : 0xFFFFFFFFFFFFFFFFULL,
 		&url
 	);
 	if (rc != NGX_OK) {

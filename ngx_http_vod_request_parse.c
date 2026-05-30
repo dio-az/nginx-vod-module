@@ -205,7 +205,7 @@ ngx_http_vod_parse_uri_file_name(
 			result->tracks_mask[media_type], default_tracks_mask, sizeof(result->tracks_mask[media_type])
 		);
 	}
-	result->sequences_mask = 0xFFFFFFFF;
+	result->sequences_mask = 0xFFFFFFFFFFFFFFFFULL;
 	result->clip_index = INVALID_CLIP_INDEX;
 
 	// segment index
@@ -301,7 +301,7 @@ ngx_http_vod_parse_uri_file_name(
 				}
 
 				sequence_index--; // NOTE: sequence_index cannot be 0 here
-				result->sequences_mask |= (1 << sequence_index);
+				result->sequences_mask |= (1ULL << sequence_index);
 			} else {
 				// sequence id
 				start_pos++; // skip the s
@@ -944,8 +944,8 @@ ngx_http_vod_parse_uri_path(
 	ngx_str_t cur_uri;
 	ngx_int_t rc;
 	track_mask_t track_mask_temp;
-	uint32_t sequences_mask;
-	uint32_t parts_mask;
+	uint64_t sequences_mask;
+	uint64_t parts_mask;
 	uint32_t media_type;
 	uint32_t clip_id = 1;
 	uint32_t i;
@@ -973,14 +973,14 @@ ngx_http_vod_parse_uri_path(
 		sequences_mask = request_params->sequences_mask;
 
 		// reset the sequences mask so that it won't be applied again on the mapping request
-		request_params->sequences_mask = 0xFFFFFFFF;
+		request_params->sequences_mask = 0xFFFFFFFFFFFFFFFFULL;
 	} else {
-		sequences_mask = 0xFFFFFFFF;
+		sequences_mask = 0xFFFFFFFFFFFFFFFFULL;
 	}
 
-	parts_mask = (1 << multi_uri.parts_count) - 1;
+	parts_mask = (1ULL << multi_uri.parts_count) - 1;
 
-	uri_count = vod_get_number_of_set_bits32(sequences_mask & parts_mask);
+	uri_count = vod_get_number_of_set_bits64(sequences_mask & parts_mask);
 	if (uri_count == 0) {
 		ngx_log_error(
 			NGX_LOG_ERR, r->connection->log, 0, "ngx_http_vod_parse_uri_path: request has no uris"
@@ -1007,7 +1007,7 @@ ngx_http_vod_parse_uri_path(
 	parts[2] = multi_uri.postfix;
 
 	for (i = 0; i < multi_uri.parts_count; i++) {
-		if ((sequences_mask & (1 << i)) == 0) {
+		if ((sequences_mask & (1ULL << i)) == 0) {
 			continue;
 		}
 
