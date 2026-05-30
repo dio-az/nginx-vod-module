@@ -8,7 +8,7 @@
 #include "vod/media_set.h"
 
 // constants
-#define MAX_SUB_URIS (32)
+#define MAX_SUB_URIS (64)
 #define MAX_URI_PARAM_NAME_LEN (32) // clipTo, clipFrom etc.
 
 #define PARSE_FILE_NAME_EXPECT_SEGMENT_INDEX (0x1)

@@ -48,7 +48,7 @@ vod_status_t manifest_utils_build_request_params_string(
 	request_context_t* request_context,
 	track_mask_t* has_tracks,
 	uint32_t segment_index,
-	uint32_t sequences_mask,
+	uint64_t sequences_mask,
 	sequence_tracks_mask_t* sequence_tracks_mask,
 	sequence_tracks_mask_t* sequence_tracks_mask_end,
 	track_mask_t* tracks_mask,
