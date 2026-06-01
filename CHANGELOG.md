@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.0](https://github.com/dio-az/nginx-vod-module/compare/v1.7.4...v1.8.0) (2026-06-01)
+
+### Features
+
+- Double max sequence limit ([#113](https://github.com/dio-az/nginx-vod-module/pull/113))
+
 ## [1.7.4](https://github.com/dio-az/nginx-vod-module/compare/v1.7.3...v1.7.4) (2026-05-26)
 
 ### Bug Fixes
