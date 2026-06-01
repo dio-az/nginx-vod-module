@@ -1022,7 +1022,7 @@ media_set_parse_sequences(
 	}
 
 	if (request_params->sequence_ids[0].len == 0) {
-		required_sequences_num = vod_get_number_of_set_bits32(request_params->sequences_mask);
+		required_sequences_num = vod_get_number_of_set_bits64(request_params->sequences_mask);
 		required_sequences_num = vod_min(array->count, required_sequences_num);
 	} else {
 		required_sequences_num = array->count;
@@ -1054,7 +1054,7 @@ media_set_parse_sequences(
 			cur_pos = part->first;
 		}
 
-		if ((request_params->sequences_mask & (1 << index)) == 0
+		if ((request_params->sequences_mask & (1ULL << index)) == 0
 		    && request_params->sequence_ids[0].len == 0) {
 			continue;
 		}
@@ -1095,7 +1095,7 @@ media_set_parse_sequences(
 			return VOD_BAD_MAPPING;
 		}
 
-		if ((request_params->sequences_mask & (1 << index)) == 0
+		if ((request_params->sequences_mask & (1ULL << index)) == 0
 		    && !media_set_sequence_id_exists(request_params, &cur_output->id)) {
 			continue;
 		}

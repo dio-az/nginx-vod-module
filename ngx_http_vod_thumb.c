@@ -24,7 +24,7 @@ static u_char jpeg_content_type[] = "image/jpeg";
 
 ngx_int_t
 ngx_http_vod_thumb_get_url(
-	ngx_http_vod_submodule_context_t* submodule_context, uint32_t sequences_mask, ngx_str_t* result
+	ngx_http_vod_submodule_context_t* submodule_context, uint64_t sequences_mask, ngx_str_t* result
 ) {
 	ngx_http_vod_loc_conf_t* conf = submodule_context->conf;
 	ngx_http_request_t* r = submodule_context->r;

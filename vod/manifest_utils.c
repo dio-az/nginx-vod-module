@@ -28,11 +28,11 @@ typedef struct {
 ////// request params formatting functions
 
 static u_char*
-manifest_utils_write_bitmask32(u_char* p, uint32_t bitmask, u_char letter) {
+manifest_utils_write_bitmask64(u_char* p, uint64_t bitmask, u_char letter) {
 	uint32_t i;
 
-	for (i = 0; i < 32; i++) {
-		if ((bitmask & (1 << i)) == 0) {
+	for (i = 0; i < 64; i++) {
+		if ((bitmask & (1ULL << i)) == 0) {
 			continue;
 		}
 
@@ -96,7 +96,7 @@ static vod_status_t
 manifest_utils_build_request_params_string_per_sequence_tracks(
 	request_context_t* request_context,
 	uint32_t segment_index,
-	uint32_t sequences_mask,
+	uint64_t sequences_mask,
 	sequence_tracks_mask_t* sequence_tracks_mask,
 	sequence_tracks_mask_t* sequence_tracks_mask_end,
 	track_mask_t* default_tracks_mask,
@@ -115,7 +115,7 @@ manifest_utils_build_request_params_string_per_sequence_tracks(
 	}
 
 	for (i = 0; i < MAX_SEQUENCES; i++) {
-		if ((sequences_mask & (1 << i)) == 0) {
+		if ((sequences_mask & (1ULL << i)) == 0) {
 			continue;
 		}
 
@@ -162,7 +162,7 @@ manifest_utils_build_request_params_string_per_sequence_tracks(
 	}
 
 	for (i = 0; i < MAX_SEQUENCES; i++) {
-		if ((sequences_mask & (1 << i)) == 0) {
+		if ((sequences_mask & (1ULL << i)) == 0) {
 			continue;
 		}
 
@@ -211,7 +211,7 @@ manifest_utils_build_request_params_string(
 	request_context_t* request_context,
 	track_mask_t* has_tracks,
 	uint32_t segment_index,
-	uint32_t sequences_mask,
+	uint64_t sequences_mask,
 	sequence_tracks_mask_t* sequence_tracks_mask,
 	sequence_tracks_mask_t* sequence_tracks_mask_end,
 	track_mask_t* tracks_mask,
@@ -240,8 +240,8 @@ manifest_utils_build_request_params_string(
 	}
 
 	// sequence mask
-	if (sequences_mask != 0xFFFFFFFF) {
-		result_size += vod_get_number_of_set_bits32(sequences_mask) * (sizeof("-f32") - 1);
+	if (sequences_mask != 0xFFFFFFFFFFFFFFFFULL) {
+		result_size += vod_get_number_of_set_bits64(sequences_mask) * (sizeof("-f64") - 1);
 	}
 
 	// video tracks
@@ -275,8 +275,8 @@ manifest_utils_build_request_params_string(
 	}
 
 	// sequence mask
-	if (sequences_mask != 0xFFFFFFFF) {
-		p = manifest_utils_write_bitmask32(p, sequences_mask, 'f');
+	if (sequences_mask != 0xFFFFFFFFFFFFFFFFULL) {
+		p = manifest_utils_write_bitmask64(p, sequences_mask, 'f');
 	}
 
 	// video tracks
