@@ -460,7 +460,7 @@ The JSON below is a sample of a non-continuous live stream (a live stream in whi
 Mandatory fields:
 
 - `sequences` - array of [sequence](#sequence) objects. The mapping has to contain at least one
-  sequence and up to *32 sequences*.
+  sequence and up to *64 sequences*.
 
 Optional fields:
 
