@@ -301,6 +301,40 @@ mp4_cbcs_encrypt_video_init_track(mp4_cbcs_encrypt_video_stream_state_t* stream_
 }
 
 static vod_status_t
+mp4_cbcs_encrypt_video_finish_packet(mp4_cbcs_encrypt_video_stream_state_t* stream_state, bool_t* done) {
+	bool_t init_track = FALSE;
+	vod_status_t rc;
+
+	*done = FALSE;
+
+	// reset parser state for the next packet
+	stream_state->cur_state = STATE_PACKET_SIZE;
+	stream_state->length_bytes_left = stream_state->nal_packet_size_length;
+	stream_state->packet_size_left = 0;
+
+	if (stream_state->base.frame_size_left > 0) {
+		// more NAL units in this frame
+		return VOD_OK;
+	}
+
+	// move to the next frame
+	if (!mp4_cbcs_encrypt_move_to_next_frame(&stream_state->base, &init_track)) {
+		// no frames left, request a flush (gated by flush_left until all writers finish)
+		*done = TRUE;
+		return mp4_cbcs_encrypt_flush(stream_state->base.state);
+	}
+
+	if (init_track) {
+		rc = mp4_cbcs_encrypt_video_init_track(stream_state);
+		if (rc != VOD_OK) {
+			return rc;
+		}
+	}
+
+	return VOD_OK;
+}
+
+static vod_status_t
 mp4_cbcs_encrypt_video_write_buffer(void* context, u_char* buffer, uint32_t size) {
 	mp4_cbcs_encrypt_video_stream_state_t* stream_state =
 		(mp4_cbcs_encrypt_video_stream_state_t*)context;
@@ -314,7 +348,7 @@ mp4_cbcs_encrypt_video_write_buffer(void* context, u_char* buffer, uint32_t size
 	uint32_t size_left;
 	int32_t cur_shift;
 	uint8_t nal_type;
-	bool_t init_track;
+	bool_t finished;
 	bool_t is_slice;
 	vod_status_t rc;
 
@@ -476,7 +510,20 @@ mp4_cbcs_encrypt_video_write_buffer(void* context, u_char* buffer, uint32_t size
 				}
 
 				stream_state->packet_size_left -= slice_header_buf_size - 1;
-				stream_state->cur_state = STATE_PACKET_COPY;
+				if (stream_state->packet_size_left > 0) {
+					// remaining packet bytes are still in the input, copy them as clear
+					stream_state->cur_state = STATE_PACKET_COPY;
+					break;
+				}
+
+				// packet written, finish it (flushes once all frames are done)
+				rc = mp4_cbcs_encrypt_video_finish_packet(stream_state, &finished);
+				if (rc != VOD_OK) {
+					return rc;
+				}
+				if (finished) {
+					return VOD_OK;
+				}
 				break;
 			}
 
@@ -576,27 +623,13 @@ mp4_cbcs_encrypt_video_write_buffer(void* context, u_char* buffer, uint32_t size
 				break;
 			}
 
-			// finished a packet
-			stream_state->cur_state = STATE_PACKET_SIZE;
-			stream_state->length_bytes_left = stream_state->nal_packet_size_length;
-			stream_state->packet_size_left = 0;
-
-			if (stream_state->base.frame_size_left > 0) {
-				break;
+			// packet written, finish it (flushes once all frames are done)
+			rc = mp4_cbcs_encrypt_video_finish_packet(stream_state, &finished);
+			if (rc != VOD_OK) {
+				return rc;
 			}
-
-			// move to the next frame
-			init_track = FALSE;
-			if (!mp4_cbcs_encrypt_move_to_next_frame(&stream_state->base, &init_track)) {
-				// finished all frames
-				return mp4_cbcs_encrypt_flush(state);
-			}
-
-			if (init_track) {
-				rc = mp4_cbcs_encrypt_video_init_track(stream_state);
-				if (rc != VOD_OK) {
-					return rc;
-				}
+			if (finished) {
+				return VOD_OK;
 			}
 
 			break;
