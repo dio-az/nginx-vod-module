@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.1](https://github.com/dio-az/nginx-vod-module/compare/v1.8.0...v1.8.1) (2026-06-05)
+
+### Bug Fixes
+
+- Fix truncated cbcs fMP4 video segments ([#118](https://github.com/dio-az/nginx-vod-module/pull/118))
+
 ## [1.8.0](https://github.com/dio-az/nginx-vod-module/compare/v1.7.4...v1.8.0) (2026-06-01)
 
 ### Features
