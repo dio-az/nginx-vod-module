@@ -686,6 +686,99 @@ ngx_http_vod_set_segment_duration_var(ngx_http_request_t* r, ngx_http_variable_v
 	return NGX_OK;
 }
 
+static ngx_flag_t
+ngx_http_vod_segment_is_last(media_set_t* media_set, uint32_t segment_index) {
+	segmenter_conf_t* segmenter = media_set->segmenter_conf;
+	uint32_t segment_count;
+
+	if (segmenter == NULL
+	    || segmenter->get_segment_count == NULL
+	    || segment_index == INVALID_SEGMENT_INDEX) {
+		return 1;
+	}
+
+	segment_count = segmenter->get_segment_count(segmenter, media_set->timing.total_duration);
+	if (segment_count == INVALID_SEGMENT_COUNT || segment_count == 0) {
+		return 1;
+	}
+
+	if (segment_index < media_set->initial_segment_index + segment_count - 1) {
+		return 0;
+	}
+
+	// an ongoing live presentation will still produce more segments
+	return media_set->type == MEDIA_SET_VOD || media_set->presentation_end;
+}
+
+static ngx_int_t
+ngx_http_vod_set_next_segment_uri_var(ngx_http_request_t* r, ngx_http_variable_value_t* v, uintptr_t data) {
+	ngx_http_vod_ctx_t* ctx;
+	ngx_str_t* uri = &r->uri;
+	u_char* uri_end = uri->data + uri->len;
+	u_char* file_name;
+	u_char* num_start;
+	u_char* num_end;
+	u_char* p;
+	ngx_uint_t segment_num;
+
+	ctx = ngx_http_get_module_ctx(r, ngx_http_vod_module);
+	if (ctx == NULL
+	    || ctx->request == NULL
+	    || ctx->request->request_class != REQUEST_CLASS_SEGMENT
+	    || ngx_http_vod_segment_is_last(
+			&ctx->submodule_context.media_set, ctx->submodule_context.request_params.segment_index
+		)) {
+		v->not_found = 1;
+		return NGX_OK;
+	}
+
+	// file name is the component after the last '/'
+	file_name = uri->data;
+	for (p = uri->data; p < uri_end; p++) {
+		if (*p == '/') {
+			file_name = p + 1;
+		}
+	}
+
+	// segment file name is '<prefix>-<index>...': the index is the digit run after the first '-'
+	num_start = NULL;
+	for (p = file_name; p < uri_end; p++) {
+		if (*p == '-') {
+			num_start = p + 1;
+			break;
+		}
+	}
+	if (num_start == NULL) {
+		v->not_found = 1;
+		return NGX_OK;
+	}
+
+	segment_num = 0;
+	for (num_end = num_start; num_end < uri_end && *num_end >= '0' && *num_end <= '9'; num_end++) {
+		segment_num = segment_num * 10 + (*num_end - '0');
+	}
+	if (num_end == num_start) {
+		v->not_found = 1;
+		return NGX_OK;
+	}
+
+	p = ngx_pnalloc(r->pool, (num_start - file_name) + NGX_INT_T_LEN + (uri_end - num_end));
+	if (p == NULL) {
+		return NGX_ERROR;
+	}
+
+	v->data = p;
+	p = ngx_copy(p, file_name, num_start - file_name);
+	p = ngx_sprintf(p, "%ui", segment_num + 1);
+	p = ngx_copy(p, num_end, uri_end - num_end);
+	v->len = p - v->data;
+	v->valid = 1;
+	v->no_cacheable = 1;
+	v->not_found = 0;
+
+	return NGX_OK;
+}
+
 static ngx_int_t
 ngx_http_vod_set_uint32_var(ngx_http_request_t* r, ngx_http_variable_value_t* v, uintptr_t data) {
 	ngx_http_vod_ctx_t* ctx;
@@ -729,6 +822,7 @@ static ngx_http_vod_variable_t ngx_http_vod_variables[] = {
 	DEFINE_VAR(notification_id),
 	DEFINE_VAR(segment_time),
 	DEFINE_VAR(segment_duration),
+	DEFINE_VAR(next_segment_uri),
 	{ngx_string("vod_frames_bytes_read"),
      ngx_http_vod_set_uint32_var,
      offsetof(ngx_http_vod_ctx_t, frames_bytes_read)},

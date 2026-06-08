@@ -924,6 +924,28 @@ location ~ ^/hls/cenc/(?<playback_token>[^/]+)/ {
 - Tweak common Kernel parameters for high-throughput, such as `net.core.*`, `net.ipv4.*`,
   `vm.swappiness`, as well as file descriptor limits.
 
+### Prefetch headers
+
+The `$vod_next_segment_uri` variable holds the relative URI of the next segment. Combined with
+`add_header`, it lets the caching layer prefetch it proactively.
+
+Standard `Link` header:
+
+```conf
+map $vod_next_segment_uri $next_segment_link {
+  ~.      '<$vod_next_segment_uri>; rel="next"';
+  default '';
+}
+
+add_header Link $next_segment_link always;
+```
+
+Akamai `CDN-Origin-Assist-Prefetch-Path` header:
+
+```conf
+add_header CDN-Origin-Assist-Prefetch-Path $vod_next_segment_uri always;
+```
+
 ### Configuration directives - Basic
 
 #### vod
@@ -2060,6 +2082,8 @@ adds the following ones:
   milliseconds.
 - `$vod_frames_bytes_read` - for segment requests, total number of bytes read while processing media
   frames.
+- `$vod_next_segment_uri` - for segment requests, the relative URI of the next segment. See
+  [prefetch headers](#prefetch-headers).
 
 > [!NOTE]
 > Configuration directives that can accept variables are explicitly marked as such.
