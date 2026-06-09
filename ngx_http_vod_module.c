@@ -1293,6 +1293,13 @@ ngx_http_vod_drm_info_request_finished(void* context, ngx_int_t rc, ngx_buf_t* r
 			"ngx_http_vod_drm_info_request_finished: upstream request failed %i",
 			rc
 		);
+
+		// NOTE: drm info is fetched after the mapping is resolved, so 404 here is a missing key,
+		// not missing media.
+		if (rc == NGX_HTTP_NOT_FOUND) {
+			rc = NGX_HTTP_BAD_GATEWAY;
+		}
+
 		goto finalize_request;
 	}
 
