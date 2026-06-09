@@ -10,6 +10,10 @@
 // constants
 #define RANGE_FORMAT "bytes=%O-%O"
 
+#ifndef NGX_HTTP_GONE
+#define NGX_HTTP_GONE 410
+#endif
+
 // macros
 #define is_in_memory(ctx) (ctx->response_buffer != NULL)
 
@@ -179,6 +183,40 @@ ngx_child_request_wev_handler(ngx_http_request_t* r) {
 			// ignore this error, treat it like a successful read with empty body
 			rc = NGX_OK;
 			b->last = b->pos;
+			break;
+
+		case NGX_HTTP_NOT_FOUND:
+		case NGX_HTTP_GONE:
+			ngx_log_error(
+				NGX_LOG_ERR,
+				r->connection->log,
+				0,
+				"ngx_child_request_wev_handler: upstream returned status %ui, returning not found",
+				u->headers_in.status_n
+			);
+			rc = NGX_HTTP_NOT_FOUND;
+			break;
+
+		case NGX_HTTP_TOO_MANY_REQUESTS:
+			ngx_log_error(
+				NGX_LOG_ERR,
+				r->connection->log,
+				0,
+				"ngx_child_request_wev_handler: upstream returned status 429, returning service unavailable"
+			);
+			rc = NGX_HTTP_SERVICE_UNAVAILABLE;
+			break;
+
+		case NGX_HTTP_SERVICE_UNAVAILABLE:
+		case NGX_HTTP_GATEWAY_TIME_OUT:
+			ngx_log_error(
+				NGX_LOG_ERR,
+				r->connection->log,
+				0,
+				"ngx_child_request_wev_handler: upstream returned status %ui, passing through",
+				u->headers_in.status_n
+			);
+			rc = u->headers_in.status_n;
 			break;
 
 		default:
