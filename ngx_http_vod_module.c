@@ -1334,7 +1334,7 @@ ngx_http_vod_drm_info_request_finished(void* context, ngx_int_t rc, ngx_buf_t* r
 			"ngx_http_vod_drm_info_request_finished: invalid drm info response %V",
 			&drm_info
 		);
-		rc = NGX_HTTP_SERVICE_UNAVAILABLE;
+		rc = NGX_HTTP_BAD_GATEWAY;
 		goto finalize_request;
 	}
 
