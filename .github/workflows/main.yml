@@ -39,6 +39,7 @@ jobs:
             libfdk-aac-dev \
             libssl-dev \
             libxml2-dev \
+            libpcre2-dev \
             nasm \
             pkg-config
       - uses: actions/checkout@v7
