@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM alpine:3.23 AS build
+FROM alpine:3.24 AS build
 
 ARG FFMPEG_VERSION=8.1
 ARG NGINX_VERSION=1.31
@@ -78,7 +78,7 @@ RUN /nginx-vod-module/scripts/build_basic.sh \
 		--with-ld-opt='-L/opt/ffmpeg/lib -Wl,-rpath,/opt/ffmpeg/lib' \
 	&& make install
 
-FROM alpine:3.23
+FROM alpine:3.24
 
 LABEL maintainer="Diogo Azevedo <hi@dio-az.dev>"
 

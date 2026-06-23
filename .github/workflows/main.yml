@@ -15,7 +15,7 @@ permissions:
 jobs:
   build:
     name: Build for NGINX ${{ matrix.nginx-version }} using ${{ matrix.build-mode }} ${{ matrix.ffmpeg-version && format('and FFmpeg {0}', matrix.ffmpeg-version) || '' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
@@ -39,9 +39,10 @@ jobs:
             libfdk-aac-dev \
             libssl-dev \
             libxml2-dev \
+            libpcre2-dev \
             nasm \
             pkg-config
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           path: nginx-vod-module
       - if: matrix.ffmpeg-version != null
