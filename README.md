@@ -1002,11 +1002,15 @@ are supported:
 - **default**: `10s`
 - **context**: `http`, `server`, `location`
 
-Sets the segment duration in milliseconds. It is highly recommended to use a segment duration that
-is a multiple of the GOP duration. If the segment duration is not a multiple of GOP duration, and
-[`vod_align_segments_to_key_frames`](#vod_align_segments_to_key_frames) is enabled, there may be
-significant differences between the segment duration that is reported in the manifest and the actual
-segment duration. This could also lead to the appearance of empty segments within the stream.
+Sets the segment duration in milliseconds.
+
+> [!IMPORTANT]
+> It is highly recommended to use a segment duration that is a multiple of the GOP duration. If the
+> segment duration is not a multiple of GOP duration, and
+> [`vod_align_segments_to_key_frames`](#vod_align_segments_to_key_frames) is enabled, there may be
+> significant differences between the segment duration that is reported in the manifest and the
+> actual segment duration. This could also lead to the appearance of empty segments within the
+> stream.
 
 #### vod_live_window_duration
 
@@ -1058,6 +1062,11 @@ the original timestamps that were set in `clipTimes`.
 Adds a bootstrap segment duration in milliseconds. This setting can be used to make the first few
 segments shorter than the default segment duration, thus making the adaptive bitrate selection
 kick-in earlier without the overhead of short segments throughout the video.
+
+> [!IMPORTANT]
+> As with [`vod_segment_duration`](#vod_segment_duration), each bootstrap segment duration should be
+> a multiple of the GOP duration (see the note under
+> [`vod_segment_duration`](#vod_segment_duration) for the consequences of not doing so).
 
 #### vod_align_segments_to_key_frames
 
