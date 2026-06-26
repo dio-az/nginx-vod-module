@@ -94,7 +94,8 @@ Optional recommended settings:
 - `--with-file-aio` - enable asynchronous I/O support, highly recommended, relevant only to `local`
   and `mapped` modes.
 - `--with-threads` - enable asynchronous file open using thread pool (also requires
-  `vod_open_file_thread_pool` in `nginx.conf`), relevant only to `local` and `mapped` modes.
+  [`vod_open_file_thread_pool`](#vod_open_file_thread_pool) in `nginx.conf`), relevant only to
+  `local` and `mapped` modes.
 - `--with-cc-opt='-O3 -mpopcnt'` - enable additional compiler optimizations (about 8% reduction
   noticed in the MP4 parse time and frame processing time compared to the default `-O`).
   > The `-mpopcnt` is only available on `x86_64` architectures.
@@ -136,7 +137,7 @@ npx http-server demo -p 8080 -g --cors
 ```
 
 Watch the demo content in your browser by visiting
-[Tears of Steel demo](https://shaka-player-demo.appspot.com/demo/#assetBase64=eyJtYW5pZmVzdFVyaSI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9jbGVhci90ZWFycy1vZi1zdGVlbC8ubTN1OCJ9).
+[Tears of Steel demo](http://localhost:8000/clear/tears-of-steel/.m3u8).
 
 > [!TIP]
 > Download the sample media files
@@ -164,7 +165,7 @@ Where:
 > [!NOTE]
 > In `mapped` and `remote` modes, the URL of the upstream request is
 > `https://<upstream>/<location>/<fileuri>?<extra_args>` (`extra_args` is determined by the
-> `vod_upstream_extra_args` parameter).
+> [`vod_upstream_extra_args`](#vod_upstream_extra_args) parameter).
 
 #### Multi URL structure
 
@@ -181,8 +182,8 @@ The sample URL above represents 3 URLs:
 - `http://<domain>/<location>/<prefix><middle2><postfix>/<filename>`
 - `http://<domain>/<location>/<prefix><middle3><postfix>/<filename>`
 
-The suffix `.urlset` (can be changed using `vod_multi_uri_suffix`) indicates that the URL should be
-treated as a multi URL. For example - the URL
+The suffix `.urlset` (can be changed using [`vod_multi_uri_suffix`](#vod_multi_uri_suffix))
+indicates that the URL should be treated as a multi URL. For example - the URL
 `http://<domain>/hls/big_buck_bunny_,6,9,15,00k.mp4.urlset/master.m3u8` will return a manifest
 containing:
 
@@ -250,7 +251,8 @@ to be in JSON format.
 This section contains a few simple examples followed by a reference of the supported objects and
 fields. But first, a couple of definitions:
 
-- `Source Clip` - a set of audio and/or video frames (tracks) extracted from a single media file.
+- [`Source Clip`](#source-clip) - a set of audio and/or video frames (tracks) extracted from a
+  single media file.
 - `Generator` - a component that can generate audio/video frames. Currently, the only supported
   generator is the silence generator.
 - `Filter` - a manipulation that can be applied on audio/video frames. The following filters are
@@ -261,11 +263,13 @@ fields. But first, a couple of definitions:
   - `Mix` - used to merge several audio tracks together, or to merge the audio of source A
     with the video of source B.
 
-- `Clip` - the result of applying zero or more filters on a set of [source clips](#source-clip).
-- `Dynamic Clip` - a clip whose contents is not known in advance, e.g. targeted ad content.
-- `Sequence` - a set of clips that should be played one after the other.
-- `Set` - several sequences that play together as an adaptive set, each sequence must have the same
-  number of clips.
+- [`Clip`](#clip-abstract) - the result of applying zero or more filters on a set of
+  [source clips](#source-clip).
+- [`Dynamic Clip`](#dynamic-clip) - a clip whose contents is not known in advance, e.g. targeted ad
+  content.
+- [`Sequence`](#sequence) - a set of clips that should be played one after the other.
+- [`Set`](#set) - several sequences that play together as an adaptive set, each sequence must have
+  the same number of clips.
 
 #### Simple mapping
 
@@ -470,7 +474,7 @@ Optional fields:
   default value is `true`, set to `false` only if the media files were transcoded with exactly the
   same parameters (in AVC for example, the clips should have exactly the same SPS/PPS).
 - `segmentDuration` - an integer that sets the segment duration in milliseconds. This field, if
-  specified, takes priority over the value set in `vod_segment_duration`.
+  specified, takes priority over the value set in [`vod_segment_duration`](#vod_segment_duration).
 - `consistentSequenceMediaInfo` - a boolean which currently affects only DASH. When set to `true`
   (default) the MPD will report the same media parameters in each period element. Setting to `false`
   can have severe performance implications for long sequences (`nginx-vod-module` has to read the
@@ -486,8 +490,8 @@ Optional fields:
   start. Setting this parameter is equivalent to passing `/clipFrom/` in the URL.
 - `clipTo` - an integer that contains a timestamp indicating where the returned stream should end.
   Setting this parameter is equivalent to passing `/clipTo/` in the URL.
-- `cache` - a boolean indicating whether the mapping response should be cached (`vod_mapping_cache`)
-  or not. Defaults to `true`, the response is cached.
+- `cache` - a boolean indicating whether the mapping response should be cached
+  ([`vod_mapping_cache`](#vod_mapping_cache)) or not. Defaults to `true`, the response is cached.
 - `closedCaptions` - array of [closed captions](#closed-captions) objects, containing languages and
   IDs of any embedded CEA-608 / CEA-708 captions. If an empty array is provided, the module will
   output `CLOSED-CAPTIONS=NONE` on each `#EXT-X-STREAM-INF` tag. If the list does not appear in the
@@ -535,8 +539,8 @@ Live fields:
   `presentationEndTime` takes priority, i.e. manifest requests will be served and signal
   presentation end.
 - `liveWindowDuration` - an integer, *optional*, providing a way to override
-  `vod_live_window_duration` specified in the configuration. If the value exceeds the absolute value
-  specified in `vod_live_window_duration`, it is ignored.
+  [`vod_live_window_duration`](#vod_live_window_duration) specified in the configuration. If the
+  value exceeds the absolute value specified in `vod_live_window_duration`, it is ignored.
 - `timeOffset` - and integer that sets an offset that should be applied to the server clock when
   serving live requests. This parameter can be used to test future/past events.
 
@@ -605,8 +609,8 @@ Optional fields:
 
   - align the segments to key frames.
   - report the correct segment durations in the manifest - providing an alternative to setting
-    `vod_manifest_segment_durations_mode` to `accurate`, which is not supported for multi clip media
-    sets (*for performance reasons*).
+    [`vod_manifest_segment_durations_mode`](#vod_manifest_segment_durations_mode) to `accurate`,
+    which is not supported for multi clip media sets (*for performance reasons*).
 
 - `firstKeyFrameOffset` - an integer measured in milliseconds relative to `firstClipTime` that sets
   the offset of the first video key frame in the clip. Defaults to `0`.
@@ -623,7 +627,8 @@ Optional fields:
 
 - `id` - a string that identifies the source clip.
 - `sourceType` - sets the interface that should be used to read the MP4 file, allowed values are:
-  `file` and `http`. Defaults to `http` when `vod_remote_upstream_location` is set, `file`
+  `file` and `http`. Defaults to `http` when
+  [`vod_remote_upstream_location`](#vod_remote_upstream_location) is set, `file`
   otherwise.
 - `tracks` - a string that specifies the tracks that should be used. Defaults to `v1-a1`, which
   means the first video and audio track.
@@ -677,7 +682,8 @@ Optional fields:
 
 - `paths` - an array of strings containing the paths of the MP4 files.
 - `clipIds` - an array of strings, containing the IDs of [source clips](#source-clip). The IDs are
-  translated to paths by issuing a request to the URI specified in `vod_source_clip_map_uri`.
+  translated to paths by issuing a request to the URI specified in
+  [`vod_source_clip_map_uri`](#vod_source_clip_map_uri).
 - `tracks` - a string that specifies the tracks that should be used. Defaults to `v1-a1`, which
   means the first video and audio track.
 - `offset` - an integer in milliseconds that indicates the timestamp offset of the first frame in
@@ -704,7 +710,7 @@ Mandatory fields:
   `firstClipTime` (`0` for vod). When the notification object is contained in a
   [concat clip](#concat-clip), the `offset` is relative to the beginning of that clip.
 - `id` - a string that identifies the notification. This ID can be referenced in
-  `vod_notification_uri` using the variable `$vod_notification_id`.
+  [`vod_notification_uri`](#vod_notification_uri) using the variable `$vod_notification_id`.
 
 #### Closed captions
 
@@ -793,7 +799,8 @@ above (CDN tokens, NGINX access rules).
 
 In addition, it is possible to configure the `nginx-vod-module` to return the encryption key over
 HTTPS while having the segments delivered over HTTP. The way to configure this is to set
-`vod_segments_base_url` to `http://<domain>` and set `vod_base_url` to `https://<domain>`.
+[`vod_segments_base_url`](#vod_segments_base_url) to `http://<domain>` and set
+[`vod_base_url`](#vod_base_url) to `https://<domain>`.
 
 #### DRM
 
@@ -805,8 +812,9 @@ segments.
 
 In order to perform the encryption, `nginx-vod-module` needs several parameters, including `key` and
 `key_id`, these parameters are fetched from an external server via HTTP GET requests. The
-`vod_drm_upstream_location` parameter specifies an NGINX `location` that is used to access the DRM
-server, and the request URI is configured using `vod_drm_request_uri` (this parameter can include
+[`vod_drm_upstream_location`](#vod_drm_upstream_location) parameter specifies an NGINX `location`
+that is used to access the DRM server, and the request URI is configured using
+[`vod_drm_request_uri`](#vod_drm_request_uri) (this parameter can include
 [variables](#nginx-variables)). The response of the DRM server is a JSON with the following format:
 
 ```json
@@ -892,32 +900,34 @@ location ~ ^/hls/cenc/(?<playback_token>[^/]+)/ {
   Akamai, CloudFront, Fastly).
 - Keep the `nginx-vod-module` as close as possible to where the source MP4 files are stored.
 - Enable `nginx-vod-module` cache mechanisms:
-  - `vod_metadata_cache` - saves the video metadata avoiding the need to re-read them for every
-    segment. This cache should be rather large, in the order of **GBs**.
-  - `vod_response_cache` - saves the responses of manifest requests. This cache may not be required
-    when using a second layer of caching server. No need to allocate a large buffer for this cache,
-    `128m` is probably more than enough for most deployments.
-  - `vod_mapping_cache` - for `mapped` mode only, few MBs is usually enough.
+  - [`vod_metadata_cache`](#vod_metadata_cache) - saves the video metadata avoiding the need to
+    re-read them for every segment. This cache should be rather large, in the order of **GBs**.
+  - [`vod_response_cache`](#vod_response_cache) - saves the responses of manifest requests. This
+    cache may not be required when using a second layer of caching server. No need to allocate a
+    large buffer for this cache, `128m` is probably more than enough for most deployments.
+  - [`vod_mapping_cache`](#vod_mapping_cache) - for `mapped` mode only, few MBs is usually enough.
   - `open_file_cache` - caches open file handles.
-  > The hit/miss ratios of these caches can be tracked by enabling `vod_performance_counters` and
-  > setting up a `vod_status` `location`.
+  > The hit/miss ratios of these caches can be tracked by enabling
+  > [`vod_performance_counters`](#vod_performance_counters) and setting up a
+  > [`vod_status`](#vod_status) `location`.
 
 - Enable `aio` for `local` and `mapped` modes - NGINX has to be compiled with `aio` support, and it
   has to be enabled in `nginx.conf` (`aio on`). You can verify the setup by looking at the
   performance counters on the status page - `read_file` (`aio off`) vs. `async_read_file`
   (`aio on`).
 - Enable asynchronous file open for `local` and `mapped` modes - NGINX has to be compiled with
-  **threads** support, and `vod_open_file_thread_pool` has to be specified in `nginx.conf`. You can
-  verify the setup by looking at the performance counters on the status page - `open_file` vs.
-  `async_open_file`.
+  **threads** support, and [`vod_open_file_thread_pool`](#vod_open_file_thread_pool) has to be
+  specified in `nginx.conf`. You can verify the setup by looking at the performance counters on the
+  status page - `open_file` vs. `async_open_file`.
   > The `open_file` may be non-zero with `vod_open_file_thread_pool` enabled due to the open file
   > cache - open requests that are served from cache will be counted as synchronous `open_file`.
 
 - When using DASH with DRM, if the video files have a **single** NALU per frame, set
-  `vod_min_single_nalu_per_frame_segment` to non-zero.
+  [`vod_min_single_nalu_per_frame_segment`](#vod_min_single_nalu_per_frame_segment) to non-zero.
 - The muxing overhead of the streams generated by this module can be reduced by changing the
   following parameters:
-  - HLS - set `vod_hls_mpegts_align_frames` to `off` and `vod_hls_mpegts_interleave_frames` to `on`.
+  - HLS - set [`vod_hls_mpegts_align_frames`](#vod_hls_mpegts_align_frames) to `off` and
+    [`vod_hls_mpegts_interleave_frames`](#vod_hls_mpegts_interleave_frames) to `on`.
 - Enable gzip compression on manifest responses -
   `gzip_types application/vnd.apple.mpegurl application/dash+xml text/xml text/vtt`.
 - Apply common NGINX performance best practices, such as `tcp_nodelay on`, `client_header_timeout`.
@@ -968,8 +978,8 @@ Enables the `nginx-vod-module` on the enclosing `location`:
 - **default**: `local`
 - **context**: `http`, `server`, `location`
 
-Sets the file access mode - `local`, `remote`, or `mapped` (see the features section above for more
-details).
+Sets the file access mode - `local`, `remote`, or `mapped` (see the [features](#features) section
+above for more details).
 
 #### vod_status
 
@@ -992,11 +1002,15 @@ are supported:
 - **default**: `10s`
 - **context**: `http`, `server`, `location`
 
-Sets the segment duration in milliseconds. It is highly recommended to use a segment duration that
-is a multiple of the GOP duration. If the segment duration is not a multiple of GOP duration, and
-`vod_align_segments_to_key_frames` is enabled, there may be significant differences between the
-segment duration that is reported in the manifest and the actual segment duration. This could also
-lead to the appearance of empty segments within the stream.
+Sets the segment duration in milliseconds.
+
+> [!IMPORTANT]
+> It is highly recommended to use a segment duration that is a multiple of the GOP duration. If the
+> segment duration is not a multiple of GOP duration, and
+> [`vod_align_segments_to_key_frames`](#vod_align_segments_to_key_frames) is enabled, there may be
+> significant differences between the segment duration that is reported in the manifest and the
+> actual segment duration. This could also lead to the appearance of empty segments within the
+> stream.
 
 #### vod_live_window_duration
 
@@ -1025,7 +1039,7 @@ following effects:
 - Frame timestamps will be continuous and start from zero.
 - Segment indexes will start from one.
 - In case of HLS, the returned manifest will have both `#EXT-X-PLAYLIST-TYPE:VOD` and
-- `#EXT-X-ENDLIST`.
+  `#EXT-X-ENDLIST`.
 
 This can be useful for clipping vod sections out of a live stream.
 
@@ -1035,7 +1049,7 @@ This can be useful for clipping vod sections out of a live stream.
 - **default**: `off`
 - **context**: `http`, `server`, `location`
 
-Generate continuous timestamps even when the media set has gaps (gaps can created by the use of
+Generate continuous timestamps even when the media set has gaps (gaps can be created by the use of
 `clipTimes`). If ID3 timestamps are enabled (`vod_hls_mpegts_output_id3_timestamps`), they contain
 the original timestamps that were set in `clipTimes`.
 
@@ -1049,6 +1063,11 @@ Adds a bootstrap segment duration in milliseconds. This setting can be used to m
 segments shorter than the default segment duration, thus making the adaptive bitrate selection
 kick-in earlier without the overhead of short segments throughout the video.
 
+> [!IMPORTANT]
+> As with [`vod_segment_duration`](#vod_segment_duration), each bootstrap segment duration should be
+> a multiple of the GOP duration (see the note under
+> [`vod_segment_duration`](#vod_segment_duration) for the consequences of not doing so).
+
 #### vod_align_segments_to_key_frames
 
 - **syntax**: `vod_align_segments_to_key_frames on | off`
@@ -1057,7 +1076,8 @@ kick-in earlier without the overhead of short segments throughout the video.
 
 When enabled, the module forces all segments to start with a key frame. Enabling this setting can
 lead to differences between the actual segment durations and the durations reported in the manifest
-(unless `vod_manifest_segment_durations_mode` is set to accurate).
+(unless [`vod_manifest_segment_durations_mode`](#vod_manifest_segment_durations_mode) is set to
+accurate).
 
 #### vod_segment_count_policy
 
@@ -1091,12 +1111,13 @@ Configures the policy for calculating the duration of a manifest containing mult
 
 Configures the calculation mode of segment durations within manifest requests:
 
-- `estimate` - reports the duration as configured in `nginx.conf`, e.g. if `vod_segment_duration`
-  is `10000`, an HLS manifest will contain `#EXTINF:10`.
+- `estimate` - reports the duration as configured in `nginx.conf`, e.g. if
+  [`vod_segment_duration`](#vod_segment_duration) is `10000`, an HLS manifest will contain
+  `#EXTINF:10`.
 - `accurate` - reports the exact duration of the segment, taking into account the frame durations,
   e.g. for a frame rate of `29.97` and *10 seconds* segments it will report the first segment as
   `10.01`. this mode also takes into account the key frame alignment, in case
-  `vod_align_segments_to_key_frames` is `on`.
+  [`vod_align_segments_to_key_frames`](#vod_align_segments_to_key_frames) is `on`.
 
 #### vod_media_set_override_json
 
@@ -1362,7 +1383,8 @@ When not set the base URL is determined as follows:
 
 Sets the base URL (scheme + domain) that should be used for delivering video segments. The parameter
 value can contain [variables](#nginx-variables), if the parameter evaluates to an empty string
-relative URLs will be used. When not set `vod_base_url` will be used. This affects only HLS.
+relative URLs will be used. When not set [`vod_base_url`](#vod_base_url) will be used. This affects
+only HLS.
 
 #### vod_multi_uri_suffix
 
@@ -1537,8 +1559,8 @@ URI is a JSON containing a [source clip](#source-clip) object.
 - **context**: `http`, `server`, `location`
 
 Sets a URL to which requests for segments should be redirected. The parameter value can contain
-variables, specifically, `$vod_dynamic_mapping` contains a serialized representation of the mapping
-of [dynamic clips](#dynamic-clip).
+[variables](#nginx-variables), specifically, `$vod_dynamic_mapping` contains a serialized
+representation of the mapping of [dynamic clips](#dynamic-clip).
 
 #### vod_apply_dynamic_mapping
 
@@ -1546,8 +1568,9 @@ of [dynamic clips](#dynamic-clip).
 - **default**: `none`
 - **context**: `http`, `server`, `location`
 
-Maps dynamic clips to concat clips using the given expression, previously generated by
-`$vod_dynamic_mapping`. The parameter value can contain [variables](#nginx-variables).
+Maps [dynamic clips](#dynamic-clip) to [concat clips](#concat-clip) using the given expression,
+previously generated by `$vod_dynamic_mapping`. The parameter value can contain
+[variables](#nginx-variables).
 
 #### vod_notification_uri
 
@@ -2054,7 +2077,7 @@ adds the following ones:
   - Mapping of [source clip](#source-clip) to paths.
 
 - `$vod_notification_id` - the ID of the current notification. This variable is only relevant on
-  `vod_notification_uri`.
+  [`vod_notification_uri`](#vod_notification_uri).
 - `$vod_dynamic_mapping` - a serialized representation of the mapping of
   [dynamic clips](#dynamic-clip) to [concat clips](#concat-clip).
 - `$vod_request_params` - a serialized representation of the request params, e.g. `12-f2-v1-a1`. The
