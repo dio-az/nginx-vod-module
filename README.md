@@ -137,7 +137,7 @@ npx http-server demo -p 8080 -g --cors
 ```
 
 Watch the demo content in your browser by visiting
-[Tears of Steel demo](https://shaka-player-demo.appspot.com/demo/#assetBase64=eyJtYW5pZmVzdFVyaSI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9jbGVhci90ZWFycy1vZi1zdGVlbC8ubTN1OCJ9).
+[Tears of Steel demo](http://localhost:8000/clear/tears-of-steel/.m3u8).
 
 > [!TIP]
 > Download the sample media files
