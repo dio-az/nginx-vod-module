@@ -5203,9 +5203,7 @@ ngx_http_vod_handle_thumb_redirect(ngx_http_vod_ctx_t* ctx, media_set_t* media_s
 	}
 
 	location->hash = 1;
-#if (nginx_version >= 1023000)
 	location->next = NULL;
-#endif
 	ngx_str_set(&location->key, "Location");
 	location->value = url;
 

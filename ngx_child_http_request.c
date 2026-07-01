@@ -25,9 +25,7 @@ typedef struct {
 
 	// deferred init
 	ngx_buf_t* response_buffer;
-#if defined(nginx_version) && nginx_version >= 1013010
 	ngx_chain_t* response_chain;
-#endif
 	ngx_list_t upstream_headers;
 
 	// temporary completion state
@@ -121,7 +119,6 @@ ngx_child_request_wev_handler(ngx_http_request_t* r) {
 
 	u = sr->upstream;
 
-#if defined(nginx_version) && nginx_version >= 1013010
 	if (is_in_memory(ctx)) {
 		if (sr->out == NULL || sr->out->buf == NULL) {
 			ngx_log_error(
@@ -134,27 +131,13 @@ ngx_child_request_wev_handler(ngx_http_request_t* r) {
 	} else {
 		b = NULL;
 	}
-#else
-	if (u == NULL) {
-		ngx_log_error(
-			NGX_LOG_ERR, r->connection->log, 0, "ngx_child_request_wev_handler: unexpected, upstream is null"
-		);
-		return;
-	}
-
-	b = &u->buffer;
-#endif
 
 	// code taken from echo-nginx-module to work around nginx subrequest issues
 	if (r == r->connection->data && r->postponed) {
 		if (r->postponed->request) {
 			r->connection->data = r->postponed->request;
 
-#if defined(nginx_version) && nginx_version >= 8012
 			ngx_http_post_request(r->postponed->request, NULL);
-#else
-			ngx_http_post_request(r->postponed->request);
-#endif
 		} else {
 			ngx_http_output_filter(r, NULL);
 		}
@@ -320,11 +303,7 @@ ngx_child_request_finished_handler(ngx_http_request_t* r, void* data, ngx_int_t 
 	if (r != r->connection->data
 	    && r->postponed
 	    && (r->main->posted_requests == NULL || r->main->posted_requests->request != pr)) {
-#if defined(nginx_version) && nginx_version >= 8012
 		ngx_http_post_request(pr, NULL);
-#else
-		ngx_http_post_request(pr);
-#endif
 	}
 
 	return NGX_OK;
@@ -373,33 +352,12 @@ ngx_child_request_initial_wev_handler(ngx_http_request_t* r) {
 		return;
 	}
 
-#if defined(nginx_version) && nginx_version >= 1013010
 	r->out = ctx->response_chain;
-#else
-	u->buffer = *ctx->response_buffer;
-#endif
 
 	// initialize the headers list
 	u->headers_in.headers = ctx->upstream_headers;
 	u->headers_in.headers.last = &u->headers_in.headers.part;
 }
-
-#if !defined(nginx_version) || nginx_version < 1023000
-static void
-ngx_child_request_update_multi_header(ngx_array_t* arr, ngx_table_elt_t* cur_value, ngx_table_elt_t* new_value) {
-	ngx_table_elt_t** cur = arr->elts;
-	ngx_table_elt_t** last = cur + arr->nelts;
-
-	for (; cur < last; cur++) {
-		if (*cur != cur_value) {
-			continue;
-		}
-
-		*cur = new_value;
-		break;
-	}
-}
-#endif
 
 static ngx_int_t
 ngx_child_request_copy_headers(
@@ -435,7 +393,6 @@ ngx_child_request_copy_headers(
 		return NGX_ERROR;
 	}
 
-#if defined(nginx_version) && nginx_version >= 1023000
 	// zero all named header fields
 	for (hh = ngx_http_headers_in; hh->name.len; hh++) {
 		if (hh->offset == 0) {
@@ -445,7 +402,6 @@ ngx_child_request_copy_headers(
 		ph = (ngx_table_elt_t**)((char*)dest + hh->offset);
 		*ph = NULL;
 	}
-#endif
 
 	output = dest->headers.last->elts;
 
@@ -494,26 +450,10 @@ ngx_child_request_copy_headers(
 		// update the header pointer, if exists
 		hh = ngx_hash_find(&cmcf->headers_in_hash, ch->hash, ch->lowcase_key, ch->key.len);
 		if (hh && hh->offset != 0) {
-#if defined(nginx_version) && nginx_version >= 1023000
 			ph = (ngx_table_elt_t**)((char*)dest + hh->offset);
 
 			output->next = *ph;
 			*ph = output;
-#else
-			if ((ch->key.len == sizeof("cookie") - 1
-			     && ngx_memcmp(ch->lowcase_key, "cookie", sizeof("cookie") - 1) == 0)
-			    || (ch->key.len == sizeof("x-forwarded-for") - 1
-			        && ngx_memcmp(ch->lowcase_key, "x-forwarded-for", sizeof("x-forwarded-for") - 1)
-			               == 0)) {
-				// multi header
-				ngx_child_request_update_multi_header((ngx_array_t*)((char*)dest + hh->offset), ch, output);
-			} else {
-				// single header
-				ph = (ngx_table_elt_t**)((char*)dest + hh->offset);
-
-				*ph = output;
-			}
-#endif
 		}
 
 		output++;
@@ -529,9 +469,7 @@ ngx_child_request_copy_headers(
 		if (dest->range == NULL) {
 			h = output++;
 			h->hash = range_hash;
-#if defined(nginx_version) && nginx_version >= 1023000
 			h->next = NULL;
-#endif
 			h->key = range_key;
 			h->lowcase_key = range_lowcase_key;
 			dest->range = h;
@@ -589,7 +527,6 @@ ngx_child_request_start(
 	child_ctx->callback_context = callback_context;
 	child_ctx->response_buffer = response_buffer;
 
-#if defined(nginx_version) && nginx_version >= 1013010
 	if (response_buffer != NULL) {
 		child_ctx->response_chain = ngx_alloc_chain_link(r->pool);
 		if (child_ctx->response_chain == NULL) {
@@ -601,7 +538,6 @@ ngx_child_request_start(
 
 		child_ctx->response_chain->buf = response_buffer;
 	}
-#endif
 
 	// build the subrequest uri
 	uri.data = ngx_pnalloc(r->pool, internal_location->len + params->base_uri.len + 1);
