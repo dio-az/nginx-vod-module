@@ -56,9 +56,13 @@
 
 #### Dependencies
 
+> [!IMPORTANT]
+> Building this module requires **NGINX v1.23+**. Older releases are rejected at build time. Prefer
+> a currently-supported release - NGINX only maintains its current mainline and stable branches.
+
 In general, if the required dependencies for building NGINX are present, it should be possible to
 build `nginx-vod-module`. However, some optional features of the module require additional
-dependencies. These are detected during the `configure` step — if any dependency is missing, the
+dependencies. These are detected during the `configure` step - if any dependency is missing, the
 corresponding feature will be disabled.
 
 The optional features are:

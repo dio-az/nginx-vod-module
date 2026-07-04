@@ -5,6 +5,10 @@
 #include <ngx_http.h>
 #include <ngx_vod_version.h>
 
+#if nginx_version < 1023000
+#error "ngx_http_vod_module requires nginx >= 1.23.0"
+#endif
+
 // globals
 extern ngx_module_t ngx_http_vod_module;
 
