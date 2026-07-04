@@ -3,7 +3,9 @@
 
 // includes
 #include <ngx_http.h>
-#include <ngx_vod_version.h>
+
+// version
+#define NGINX_VOD_VERSION  "1.5.1"
 
 // globals
 extern ngx_module_t ngx_http_vod_module;
