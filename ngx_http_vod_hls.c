@@ -713,7 +713,7 @@ ngx_http_vod_hls_handle_mp4_init_segment(
 	aes_cbc_encrypt_context_t* encrypted_write_context;
 	hls_encryption_params_t encryption_params;
 	atom_writer_t pssh_atom_writer_temp;
-	drm_info_t* drm_info;
+	drm_info_t* drm_info = (drm_info_t*)submodule_context->media_set.sequences[0].drm_info;
 
 	rc = ngx_http_vod_hls_init_encryption_params(&encryption_params, submodule_context, HLS_CONTAINER_FMP4);
 	if (rc != NGX_OK) {
@@ -727,15 +727,13 @@ ngx_http_vod_hls_handle_mp4_init_segment(
 			&submodule_context->media_set,
 			SCHEME_TYPE_CBCS,
 			FALSE,
-			NULL,
+			drm_info->key_id,
 			encryption_params.iv,
 			&stsd_atom_writers
 		);
 		break;
 
 	case HLS_ENC_SAMPLE_AES_CTR:
-		drm_info = (drm_info_t*)submodule_context->media_set.sequences[0].drm_info;
-
 		// NOTE: similar to DASH, but clear lead is always disabled.
 		rc = mp4_init_segment_get_encrypted_stsd_writers(
 			&submodule_context->request_context,
