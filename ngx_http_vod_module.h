@@ -5,7 +5,7 @@
 #include <ngx_http.h>
 
 // version
-#define NGINX_VOD_VERSION  "1.5.1"
+#define NGINX_VOD_VERSION "1.5.1"
 
 #if nginx_version < 1023000
 #error "ngx_http_vod_module requires nginx >= 1.23.0"
