@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.0](https://github.com/dio-az/nginx-vod-module/compare/v1.8.1...v1.9.0) (2026-07-08)
+
+Error status codes are more precise now: missing objects return `404` instead of `502`.
+
+> [!IMPORTANT]
+> Review negative cache TTLs and `4xx` and `5xx`-based alerts accordingly.
+
+### Features
+
+- Improve upstream error status handling ([#120](https://github.com/dio-az/nginx-vod-module/pull/120))
+- Expose the next segment URI for prefetch hints ([#119](https://github.com/dio-az/nginx-vod-module/pull/119))
+
+### Bug Fixes
+
+- Fix cbcs `default_KID` for modern EME playback ([#128](https://github.com/dio-az/nginx-vod-module/pull/128))
+- Fix module version reporting ([#127](https://github.com/dio-az/nginx-vod-module/pull/127))
+
 ## [1.8.1](https://github.com/dio-az/nginx-vod-module/compare/v1.8.0...v1.8.1) (2026-06-05)
 
 ### Bug Fixes
