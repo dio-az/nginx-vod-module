@@ -1026,7 +1026,7 @@ ngx_http_vod_hls_merge_loc_conf(
 		conf->encryption_key_uri = prev->encryption_key_uri;
 	}
 	ngx_conf_merge_uint_value(
-		conf->m3u8_config.container_format, prev->m3u8_config.container_format, HLS_CONTAINER_AUTO
+		conf->m3u8_config.container_format, prev->m3u8_config.container_format, HLS_CONTAINER_FMP4
 	);
 	ngx_conf_merge_uint_value(conf->m3u8_config.m3u8_version, prev->m3u8_config.m3u8_version, 6);
 
