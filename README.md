@@ -1803,11 +1803,11 @@ compatibility.
 #### vod_hls_container_format
 
 - **syntax**: `vod_hls_container_format mpegts | fmp4 | auto`
-- **default**: `auto`
+- **default**: `fmp4`
 - **context**: `http`, `server`, `location`
 
-Sets the container format of the HLS segments. The default behavior is to use `fmp4` for HEVC, and
-`mpegts` otherwise.
+Sets the container format of the HLS segments. When `auto`, `fmp4` is used for non-AVC video or
+`sample-aes-ctr` encryption, and `mpegts` otherwise.
 
 > [!NOTE]
 > Apple does not support HEVC over MPEG-TS.
