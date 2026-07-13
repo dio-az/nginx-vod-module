@@ -939,6 +939,10 @@ ngx_buffer_cache_fetch_copy_perf(
 		return result;
 	}
 
+	if (original_buffer.len == (size_t)-1) {
+		return -1;
+	}
+
 	buffer_copy = ngx_palloc(r->pool, original_buffer.len + 1);
 	if (buffer_copy == NULL) {
 		ngx_log_debug0(
