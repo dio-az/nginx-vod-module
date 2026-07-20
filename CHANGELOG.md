@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.1](https://github.com/dio-az/nginx-vod-module/compare/v1.9.0...v1.9.1) (2026-07-20)
+
+### Bug Fixes
+
+- Make thumbnail selection frame-accurate ([#133](https://github.com/dio-az/nginx-vod-module/pull/133))
+- Honor sample aspect ratio (SAR) for thumb size calculations ([#96](https://github.com/dio-az/nginx-vod-module/pull/96))
+
 ## [1.9.0](https://github.com/dio-az/nginx-vod-module/compare/v1.8.1...v1.9.0) (2026-07-08)
 
 Error status codes are more precise now: missing objects return `404` instead of `502`.
