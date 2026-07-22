@@ -46,7 +46,7 @@ jobs:
         with:
           path: nginx-vod-module
       - if: matrix.ffmpeg-version != null
-        run: ./nginx-vod-module/scripts/fetch_latest.sh https://ffmpeg.org/releases ffmpeg-${{ matrix.ffmpeg-version }} ffmpeg
+        run: ./nginx-vod-module/scripts/fetch_latest.sh ffmpeg.org/releases ffmpeg-${{ matrix.ffmpeg-version }}
       - if: matrix.ffmpeg-version != null
         working-directory: ffmpeg
         run: |
@@ -62,7 +62,7 @@ jobs:
           make -j$(nproc)
           sudo make install
       - run: sudo ldconfig
-      - run: ./nginx-vod-module/scripts/fetch_latest.sh https://nginx.org/download nginx-${{ matrix.nginx-version }} nginx
+      - run: ./nginx-vod-module/scripts/fetch_latest.sh nginx.org/download nginx-${{ matrix.nginx-version }}
       - working-directory: nginx
         run: |
           ../nginx-vod-module/scripts/build_basic.sh \

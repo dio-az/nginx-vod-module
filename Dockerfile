@@ -17,8 +17,8 @@ RUN apk --no-cache add \
 
 COPY scripts/fetch_latest.sh /usr/local/bin/fetch_latest
 
-RUN fetch_latest https://ffmpeg.org/releases ffmpeg-${FFMPEG_VERSION} ffmpeg \
-	&& fetch_latest https://nginx.org/download nginx-${NGINX_VERSION} nginx
+RUN fetch_latest ffmpeg.org/releases ffmpeg-${FFMPEG_VERSION} \
+	&& fetch_latest nginx.org/download nginx-${NGINX_VERSION}
 
 WORKDIR /ffmpeg
 
