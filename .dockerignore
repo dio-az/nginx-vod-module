@@ -5,4 +5,5 @@
 !sample
 !static
 !scripts/build_basic.sh
+!scripts/build_ffmpeg.sh
 !scripts/fetch_latest.sh
