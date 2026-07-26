@@ -14,6 +14,9 @@
 	--enable-filter=volume,amix,atempo \
 	--enable-decoder=h264,hevc,vp8,vp9,av1,aac \
 	--enable-encoder=libfdk_aac,mjpeg \
+	--enable-bsf=extract_extradata \
 	"$@"
+
+# `extract_extradata` pulls in av1_parse, missing for AV1 decoder before FFmpeg v7
 
 make -j$(nproc)
