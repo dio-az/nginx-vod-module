@@ -15,35 +15,14 @@ RUN apk --no-cache add \
 		fdk-aac-dev \
 		openssl-dev
 
-COPY scripts/fetch_latest.sh /usr/local/bin/fetch_latest
+COPY scripts/fetch_latest.sh scripts/build_ffmpeg.sh /usr/local/bin/
 
-RUN fetch_latest https://ffmpeg.org/releases ffmpeg-${FFMPEG_VERSION} ffmpeg \
-	&& fetch_latest https://nginx.org/download nginx-${NGINX_VERSION} nginx
+RUN fetch_latest.sh ffmpeg.org/releases ffmpeg-${FFMPEG_VERSION} \
+	&& fetch_latest.sh nginx.org/download nginx-${NGINX_VERSION}
 
 WORKDIR /ffmpeg
 
-RUN ./configure \
-		--prefix=/opt/ffmpeg \
-		--disable-programs \
-		--disable-doc \
-		--disable-static \
-		--disable-avdevice \
-		--disable-avformat \
-		--enable-shared \
-		--enable-gpl \
-		--enable-nonfree \
-		--enable-libfdk-aac \
-		--disable-everything \
-		--enable-filters \
-		--enable-decoder=h264 \
-		--enable-decoder=hevc \
-		--enable-decoder=vp8 \
-		--enable-decoder=vp9 \
-		--enable-decoder=av1 \
-		--enable-decoder=aac --enable-encoder=libfdk_aac \
-		--enable-encoder=mjpeg \
-	&& make -j$(nproc) \
-	&& make install
+RUN build_ffmpeg.sh --prefix=/opt/ffmpeg && make install
 
 COPY --exclude=sample --exclude=static . /nginx-vod-module
 

@@ -46,23 +46,23 @@ jobs:
         with:
           path: nginx-vod-module
       - if: matrix.ffmpeg-version != null
-        run: ./nginx-vod-module/scripts/fetch_latest.sh https://ffmpeg.org/releases ffmpeg-${{ matrix.ffmpeg-version }} ffmpeg
+        run: ./nginx-vod-module/scripts/fetch_latest.sh ffmpeg.org/releases ffmpeg-${{ matrix.ffmpeg-version }}
       - if: matrix.ffmpeg-version != null
+        id: ffmpeg-cache
+        uses: actions/cache@v6
+        with:
+          path: ffmpeg-cache
+          key: ${{ hashFiles('ffmpeg/**', 'nginx-vod-module/scripts/build_ffmpeg.sh') }}
+      - if: matrix.ffmpeg-version != null && steps.ffmpeg-cache.outputs.cache-hit != 'true'
         working-directory: ffmpeg
         run: |
-          ./configure \
-            --prefix=/usr/local \
-            --disable-programs \
-            --disable-doc \
-            --disable-static \
-            --enable-gpl \
-            --enable-nonfree \
-            --enable-shared \
-            --enable-libfdk-aac
-          make -j$(nproc)
-          sudo make install
-      - run: sudo ldconfig
-      - run: ./nginx-vod-module/scripts/fetch_latest.sh https://nginx.org/download nginx-${{ matrix.nginx-version }} nginx
+          ../nginx-vod-module/scripts/build_ffmpeg.sh --prefix=/usr/local
+          make install DESTDIR=$GITHUB_WORKSPACE/ffmpeg-cache
+      - if: matrix.ffmpeg-version != null
+        run: |
+          sudo cp -aT ffmpeg-cache /
+          sudo ldconfig
+      - run: ./nginx-vod-module/scripts/fetch_latest.sh nginx.org/download nginx-${{ matrix.nginx-version }}
       - working-directory: nginx
         run: |
           ../nginx-vod-module/scripts/build_basic.sh \
