@@ -13,9 +13,51 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    name: Build for NGINX ${{ matrix.nginx-version }} using ${{ matrix.build-mode }} ${{ matrix.ffmpeg-version && format('and FFmpeg {0}', matrix.ffmpeg-version) || '' }}
+  ffmpeg:
+    name: Build ffmpeg ${{ matrix.version }}
     runs-on: ubuntu-26.04
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - '6.1'
+          - '7.1'
+          - '8.1'
+    steps:
+      - run: sudo apt-get update -qq
+      - run: |
+          sudo apt-get install -y \
+            wget \
+            build-essential \
+            libfdk-aac-dev \
+            nasm \
+            pkg-config
+      - uses: actions/checkout@v7
+        with:
+          path: nginx-vod-module
+      - run: ./nginx-vod-module/scripts/fetch_latest.sh ffmpeg.org/releases ffmpeg-${{ matrix.version }}
+      - id: ffmpeg-cache
+        uses: actions/cache@v6
+        with:
+          path: ffmpeg-build
+          key: ffmpeg-${{ matrix.version }}-${{ hashFiles('ffmpeg/**', 'nginx-vod-module/scripts/build_ffmpeg.sh') }}
+      - if: steps.ffmpeg-cache.outputs.cache-hit != 'true'
+        working-directory: ffmpeg
+        run: |
+          ../nginx-vod-module/scripts/build_ffmpeg.sh --prefix=/usr/local
+          make install DESTDIR=$GITHUB_WORKSPACE/ffmpeg-build
+      - run: tar -cf ffmpeg-build.tar -C ffmpeg-build .
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ffmpeg-${{ matrix.version }}
+          path: ffmpeg-build.tar
+          retention-days: 1
+
+  build:
+    name: Build for nginx ${{ matrix.nginx-version }} using ${{ matrix.build-mode }} ${{ matrix.ffmpeg-version && format('and ffmpeg {0}', matrix.ffmpeg-version) || '' }}
+    runs-on: ubuntu-26.04
+    if: ${{ !cancelled() }}
+    needs: ffmpeg
     strategy:
       fail-fast: false
       matrix:
@@ -39,28 +81,17 @@ jobs:
             libfdk-aac-dev \
             libssl-dev \
             libxml2-dev \
-            libpcre2-dev \
-            nasm \
-            pkg-config
+            libpcre2-dev
       - uses: actions/checkout@v7
         with:
           path: nginx-vod-module
       - if: matrix.ffmpeg-version != null
-        run: ./nginx-vod-module/scripts/fetch_latest.sh ffmpeg.org/releases ffmpeg-${{ matrix.ffmpeg-version }}
-      - if: matrix.ffmpeg-version != null
-        id: ffmpeg-cache
-        uses: actions/cache@v6
+        uses: actions/download-artifact@v8
         with:
-          path: ffmpeg-cache
-          key: ${{ hashFiles('ffmpeg/**', 'nginx-vod-module/scripts/build_ffmpeg.sh') }}
-      - if: matrix.ffmpeg-version != null && steps.ffmpeg-cache.outputs.cache-hit != 'true'
-        working-directory: ffmpeg
-        run: |
-          ../nginx-vod-module/scripts/build_ffmpeg.sh --prefix=/usr/local
-          make install DESTDIR=$GITHUB_WORKSPACE/ffmpeg-cache
+          name: ffmpeg-${{ matrix.ffmpeg-version }}
       - if: matrix.ffmpeg-version != null
         run: |
-          sudo cp -aT ffmpeg-cache /
+          sudo tar -xf ffmpeg-build.tar -C /
           sudo ldconfig
       - run: ./nginx-vod-module/scripts/fetch_latest.sh nginx.org/download nginx-${{ matrix.nginx-version }}
       - working-directory: nginx
