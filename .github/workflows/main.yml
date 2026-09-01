@@ -13,9 +13,37 @@ permissions:
   contents: read
 
 jobs:
+  source:
+    name: Fetch ${{ matrix.package }} ${{ matrix.version }}
+    runs-on: ubuntu-26.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { package: ffmpeg, version: '6.1', url: ffmpeg.org/releases }
+          - { package: ffmpeg, version: '7.1', url: ffmpeg.org/releases }
+          - { package: ffmpeg, version: '8.1', url: ffmpeg.org/releases }
+          - { package: nginx, version: '1.30', url: nginx.org/download }
+          - { package: nginx, version: '1.31', url: nginx.org/download }
+    steps:
+      - run: sudo apt-get update -qq
+      - run: sudo apt-get install -y wget
+      - uses: actions/checkout@v7
+        with:
+          path: nginx-vod-module
+      - run: ./nginx-vod-module/scripts/fetch_latest.sh ${{ matrix.url }} ${{ matrix.package }}-${{ matrix.version }}
+      - run: tar -cf ${{ matrix.package }}-source.tar ${{ matrix.package }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.package }}-source-${{ matrix.version }}
+          path: ${{ matrix.package }}-source.tar
+          retention-days: 1
+
   ffmpeg:
     name: Build ffmpeg ${{ matrix.version }}
     runs-on: ubuntu-26.04
+    if: ${{ !cancelled() }}
+    needs: source
     strategy:
       fail-fast: false
       matrix:
@@ -27,7 +55,6 @@ jobs:
       - run: sudo apt-get update -qq
       - run: |
           sudo apt-get install -y \
-            wget \
             build-essential \
             libfdk-aac-dev \
             nasm \
@@ -35,7 +62,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           path: nginx-vod-module
-      - run: ./nginx-vod-module/scripts/fetch_latest.sh ffmpeg.org/releases ffmpeg-${{ matrix.version }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: ffmpeg-source-${{ matrix.version }}
+      - run: tar -xf ffmpeg-source.tar
       - id: ffmpeg-cache
         uses: actions/cache@v6
         with:
@@ -49,7 +79,7 @@ jobs:
       - run: tar -cf ffmpeg-build.tar -C ffmpeg-build .
       - uses: actions/upload-artifact@v7
         with:
-          name: ffmpeg-${{ matrix.version }}
+          name: ffmpeg-build-${{ matrix.version }}
           path: ffmpeg-build.tar
           retention-days: 1
 
@@ -57,7 +87,9 @@ jobs:
     name: Build for nginx ${{ matrix.nginx-version }} using ${{ matrix.build-mode }} ${{ matrix.ffmpeg-version && format('and ffmpeg {0}', matrix.ffmpeg-version) || '' }}
     runs-on: ubuntu-26.04
     if: ${{ !cancelled() }}
-    needs: ffmpeg
+    needs:
+      - source
+      - ffmpeg
     strategy:
       fail-fast: false
       matrix:
@@ -76,7 +108,6 @@ jobs:
       - run: sudo apt-get update -qq
       - run: |
           sudo apt-get install -y \
-            wget \
             build-essential \
             libfdk-aac-dev \
             libssl-dev \
@@ -88,12 +119,15 @@ jobs:
       - if: matrix.ffmpeg-version != null
         uses: actions/download-artifact@v8
         with:
-          name: ffmpeg-${{ matrix.ffmpeg-version }}
+          name: ffmpeg-build-${{ matrix.ffmpeg-version }}
       - if: matrix.ffmpeg-version != null
         run: |
           sudo tar -xf ffmpeg-build.tar -C /
           sudo ldconfig
-      - run: ./nginx-vod-module/scripts/fetch_latest.sh nginx.org/download nginx-${{ matrix.nginx-version }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: nginx-source-${{ matrix.nginx-version }}
+      - run: tar -xf nginx-source.tar
       - working-directory: nginx
         run: |
           ../nginx-vod-module/scripts/build_basic.sh \
