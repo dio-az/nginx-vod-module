@@ -40,8 +40,9 @@ jobs:
           retention-days: 1
 
   ffmpeg:
-    name: Build ffmpeg ${{ matrix.version }}
-    runs-on: ubuntu-26.04
+    name: Build ffmpeg ${{ matrix.version }} (${{ matrix.arch }})
+    # Build on min supported version for glibc backward compatibility
+    runs-on: ubuntu-24.04${{ matrix.arch == 'arm64' && '-arm' || '' }}
     if: ${{ !cancelled() }}
     needs: source
     strategy:
@@ -51,6 +52,9 @@ jobs:
           - '6.1'
           - '7.1'
           - '8.1'
+        arch:
+          - amd64
+          - arm64
     steps:
       - run: sudo apt-get update -qq
       - run: |
@@ -70,7 +74,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ffmpeg-build
-          key: ffmpeg-${{ matrix.version }}-${{ hashFiles('ffmpeg/**', 'nginx-vod-module/scripts/build_ffmpeg.sh') }}
+          key: ffmpeg-${{ matrix.version }}-${{ matrix.arch }}-${{ hashFiles('ffmpeg/**', 'nginx-vod-module/scripts/build_ffmpeg.sh') }}
       - if: steps.ffmpeg-cache.outputs.cache-hit != 'true'
         working-directory: ffmpeg
         run: |
@@ -79,13 +83,13 @@ jobs:
       - run: tar -cf ffmpeg-build.tar -C ffmpeg-build .
       - uses: actions/upload-artifact@v7
         with:
-          name: ffmpeg-build-${{ matrix.version }}
+          name: ffmpeg-build-${{ matrix.version }}-${{ matrix.arch }}
           path: ffmpeg-build.tar
           retention-days: 1
 
   build:
-    name: Build for nginx ${{ matrix.nginx-version }} using ${{ matrix.build-mode }} ${{ matrix.ffmpeg-version && format('and ffmpeg {0}', matrix.ffmpeg-version) || '' }}
-    runs-on: ubuntu-26.04
+    name: Build for nginx ${{ matrix.nginx-version }}${{ matrix.ffmpeg-version && format(' with ffmpeg {0}', matrix.ffmpeg-version) || '' }} (${{ matrix.build-mode }}, ubuntu-${{ matrix.ubuntu-version }}, ${{ matrix.arch }})
+    runs-on: ubuntu-${{ matrix.ubuntu-version }}${{ matrix.arch == 'arm64' && '-arm' || '' }}
     if: ${{ !cancelled() }}
     needs:
       - source
@@ -104,6 +108,12 @@ jobs:
         build-mode:
           - --add-module
           - --add-dynamic-module
+        ubuntu-version:
+          - '24.04'
+          - '26.04'
+        arch:
+          - amd64
+          - arm64
     steps:
       - run: sudo apt-get update -qq
       - run: |
@@ -120,7 +130,7 @@ jobs:
       - if: matrix.ffmpeg-version != null
         uses: actions/download-artifact@v8
         with:
-          name: ffmpeg-build-${{ matrix.ffmpeg-version }}
+          name: ffmpeg-build-${{ matrix.ffmpeg-version }}-${{ matrix.arch }}
       - if: matrix.ffmpeg-version != null
         run: |
           sudo tar -xf ffmpeg-build.tar -C /
@@ -133,7 +143,7 @@ jobs:
         run: |
           ../nginx-vod-module/scripts/build_basic.sh \
             ${{ matrix.build-mode }}=../nginx-vod-module \
-            --with-cc-opt='-O3 -mpopcnt'
+            --with-cc-opt='-O3 ${{ matrix.arch == 'amd64' && '-mpopcnt' || '' }}'
           sudo make install
       - run: /opt/nginx/sbin/nginx -V
       - working-directory: nginx-vod-module/test
