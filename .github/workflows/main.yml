@@ -112,11 +112,17 @@ jobs:
       - uses: actions/checkout@v7
         with:
           path: nginx-vod-module
-      - if: matrix.ffmpeg-version != null
+      - if: matrix.ffmpeg-version == 'distro'
+        run: |
+          sudo apt-get install -y --no-install-recommends \
+            libavcodec-dev \
+            libavfilter-dev \
+            libswscale-dev
+      - if: matrix.ffmpeg-version && matrix.ffmpeg-version != 'distro'
         uses: actions/download-artifact@v8
         with:
           name: ffmpeg-build-${{ matrix.ffmpeg-version }}-${{ matrix.arch }}
-      - if: matrix.ffmpeg-version != null
+      - if: matrix.ffmpeg-version && matrix.ffmpeg-version != 'distro'
         run: |
           sudo tar -xf ffmpeg-build.tar -C /
           sudo ldconfig

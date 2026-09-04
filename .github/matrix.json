@@ -1,55 +1,83 @@
 [
   {
-    "nginx-version": "1.30",
+    "nginx-version": "1.24",
     "build-mode": "--add-module",
+    "ffmpeg-version": "distro",
     "ubuntu-version": "24.04",
     "arch": "amd64"
   },
   {
-    "nginx-version": "1.31",
+    "nginx-version": "1.24",
     "build-mode": "--add-dynamic-module",
-    "ubuntu-version": "26.04",
-    "arch": "arm64"
-  },
-  {
-    "nginx-version": "1.31",
-    "ffmpeg-version": "6.1",
-    "build-mode": "--add-dynamic-module",
-    "ubuntu-version": "24.04",
-    "arch": "amd64"
-  },
-  {
-    "nginx-version": "1.30",
-    "ffmpeg-version": "6.1",
-    "build-mode": "--add-module",
-    "ubuntu-version": "26.04",
-    "arch": "arm64"
-  },
-  {
-    "nginx-version": "1.30",
     "ffmpeg-version": "7.1",
-    "build-mode": "--add-dynamic-module",
     "ubuntu-version": "24.04",
     "arch": "arm64"
   },
   {
-    "nginx-version": "1.31",
-    "ffmpeg-version": "7.1",
+    "nginx-version": "1.28",
     "build-mode": "--add-module",
     "ubuntu-version": "26.04",
     "arch": "amd64"
   },
   {
-    "nginx-version": "1.31",
-    "ffmpeg-version": "8.1",
+    "nginx-version": "1.28",
+    "build-mode": "--add-dynamic-module",
+    "ffmpeg-version": "distro",
+    "ubuntu-version": "26.04",
+    "arch": "arm64"
+  },
+  {
+    "nginx-version": "1.30",
     "build-mode": "--add-module",
+    "ffmpeg-version": "distro",
+    "ubuntu-version": "26.04",
+    "arch": "amd64"
+  },
+  {
+    "nginx-version": "1.30",
+    "build-mode": "--add-module",
+    "ffmpeg-version": "9.0",
+    "ubuntu-version": "26.04",
+    "arch": "arm64"
+  },
+  {
+    "nginx-version": "1.30",
+    "build-mode": "--add-dynamic-module",
+    "ffmpeg-version": "distro",
     "ubuntu-version": "24.04",
     "arch": "arm64"
   },
   {
     "nginx-version": "1.30",
-    "ffmpeg-version": "8.1",
     "build-mode": "--add-dynamic-module",
+    "ffmpeg-version": "8.1",
+    "ubuntu-version": "26.04",
+    "arch": "amd64"
+  },
+  {
+    "nginx-version": "1.31",
+    "build-mode": "--add-module",
+    "ffmpeg-version": "7.1",
+    "ubuntu-version": "26.04",
+    "arch": "amd64"
+  },
+  {
+    "nginx-version": "1.31",
+    "build-mode": "--add-module",
+    "ffmpeg-version": "8.1",
+    "ubuntu-version": "26.04",
+    "arch": "arm64"
+  },
+  {
+    "nginx-version": "1.31",
+    "build-mode": "--add-dynamic-module",
+    "ubuntu-version": "24.04",
+    "arch": "arm64"
+  },
+  {
+    "nginx-version": "1.31",
+    "build-mode": "--add-dynamic-module",
+    "ffmpeg-version": "9.0",
     "ubuntu-version": "26.04",
     "arch": "amd64"
   }

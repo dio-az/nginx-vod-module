@@ -14,7 +14,7 @@ matrix = json.loads(matrix_path.read_text())
 installs = {
 	(row['ffmpeg-version'], row['arch'])
 	for row in matrix
-	if 'ffmpeg-version' in row
+	if row.get('ffmpeg-version') not in (None, 'distro')
 }
 
 # Min supported version for glibc backward compatibility
