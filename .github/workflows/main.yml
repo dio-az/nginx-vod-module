@@ -137,6 +137,12 @@ jobs:
             --with-cc-opt='-O3 ${{ matrix.arch == 'amd64' && '-mpopcnt' || '' }}'
           sudo make install
       - run: /opt/nginx/sbin/nginx -V
+      - if: matrix.ffmpeg-version
+        working-directory: nginx
+        run: |
+          grep NGX_HAVE_LIB_AV_CODEC objs/ngx_auto_config.h
+          grep NGX_HAVE_LIB_AV_FILTER objs/ngx_auto_config.h
+          grep NGX_HAVE_LIB_SW_SCALE objs/ngx_auto_config.h
       - working-directory: nginx-vod-module/test
         env:
           NGINX_SOURCE_DIR: ../../nginx
