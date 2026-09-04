@@ -136,6 +136,7 @@ jobs:
             ${{ matrix.build-mode }}=../nginx-vod-module \
             --with-cc-opt='-O3 ${{ matrix.arch == 'amd64' && '-mpopcnt' || '' }}'
           sudo make install
+          sudo mkdir -p /var/spool/nginx
       - run: /opt/nginx/sbin/nginx -V
       - if: matrix.ffmpeg-version
         working-directory: nginx
@@ -143,6 +144,8 @@ jobs:
           grep NGX_HAVE_LIB_AV_CODEC objs/ngx_auto_config.h
           grep NGX_HAVE_LIB_AV_FILTER objs/ngx_auto_config.h
           grep NGX_HAVE_LIB_SW_SCALE objs/ngx_auto_config.h
+      - if: matrix.build-mode == '--add-dynamic-module'
+        run: sudo /opt/nginx/sbin/nginx -t -g 'load_module modules/ngx_http_vod_module.so;'
       - working-directory: nginx-vod-module/test
         env:
           NGINX_SOURCE_DIR: ../../nginx
