@@ -13,63 +13,139 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    name: Build for NGINX ${{ matrix.nginx-version }} using ${{ matrix.build-mode }} ${{ matrix.ffmpeg-version && format('and FFmpeg {0}', matrix.ffmpeg-version) || '' }}
-    runs-on: ubuntu-26.04
+  matrix:
+    name: Resolve matrix
+    runs-on: ubuntu-latest
+    outputs:
+      source: ${{ steps.resolve.outputs.source }}
+      ffmpeg: ${{ steps.resolve.outputs.ffmpeg }}
+      build: ${{ steps.resolve.outputs.build }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: resolve
+        run: ./scripts/build_matrix.py >> "$GITHUB_OUTPUT"
+
+  source:
+    name: Fetch ${{ matrix.package }} ${{ matrix.version }}
+    runs-on: ubuntu-latest
+    needs: matrix
     strategy:
       fail-fast: false
-      matrix:
-        nginx-version:
-          - '1.30'
-          - '1.31'
-        ffmpeg-version:
-          - null
-          - '6.1'
-          - '7.1'
-          - '8.1'
-        build-mode:
-          - --add-module
-          - --add-dynamic-module
+      matrix: ${{ fromJSON(needs.matrix.outputs.source) }}
+    steps:
+      - run: sudo apt-get update -qq
+      - run: sudo apt-get install -y --no-install-recommends wget ca-certificates
+      - uses: actions/checkout@v7
+        with:
+          path: nginx-vod-module
+      - run: ./nginx-vod-module/scripts/fetch_latest.sh ${{ matrix.url }} ${{ matrix.package }}-${{ matrix.version }}
+      - run: tar -cf ${{ matrix.package }}-source.tar ${{ matrix.package }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.package }}-source-${{ matrix.version }}
+          path: ${{ matrix.package }}-source.tar
+          retention-days: 1
+
+  ffmpeg:
+    name: Build ffmpeg ${{ matrix.ffmpeg-version }} (${{ matrix.arch }})
+    runs-on: ubuntu-${{ matrix.ubuntu-version }}${{ matrix.arch == 'arm64' && '-arm' || '' }}
+    if: ${{ !cancelled() }}
+    needs:
+      - matrix
+      - source
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrix.outputs.ffmpeg) }}
     steps:
       - run: sudo apt-get update -qq
       - run: |
-          sudo apt-get install -y \
-            wget \
+          sudo apt-get install -y --no-install-recommends \
             build-essential \
             libfdk-aac-dev \
-            libssl-dev \
-            libxml2-dev \
-            libpcre2-dev \
             nasm \
             pkg-config
       - uses: actions/checkout@v7
         with:
           path: nginx-vod-module
-      - if: matrix.ffmpeg-version != null
-        run: ./nginx-vod-module/scripts/fetch_latest.sh ffmpeg.org/releases ffmpeg-${{ matrix.ffmpeg-version }}
-      - if: matrix.ffmpeg-version != null
-        id: ffmpeg-cache
+      - uses: actions/download-artifact@v8
+        with:
+          name: ffmpeg-source-${{ matrix.ffmpeg-version }}
+      - run: tar -xf ffmpeg-source.tar
+      - id: ffmpeg-cache
         uses: actions/cache@v6
         with:
-          path: ffmpeg-cache
-          key: ${{ hashFiles('ffmpeg/**', 'nginx-vod-module/scripts/build_ffmpeg.sh') }}
-      - if: matrix.ffmpeg-version != null && steps.ffmpeg-cache.outputs.cache-hit != 'true'
+          path: ffmpeg-build
+          key: ffmpeg-${{ matrix.ffmpeg-version }}-ubuntu-${{ matrix.ubuntu-version }}-${{ matrix.arch }}-${{ hashFiles('ffmpeg/**', 'nginx-vod-module/scripts/build_ffmpeg.sh') }}
+      - if: steps.ffmpeg-cache.outputs.cache-hit != 'true'
         working-directory: ffmpeg
         run: |
           ../nginx-vod-module/scripts/build_ffmpeg.sh --prefix=/usr/local
-          make install DESTDIR=$GITHUB_WORKSPACE/ffmpeg-cache
-      - if: matrix.ffmpeg-version != null
+          make install DESTDIR=$GITHUB_WORKSPACE/ffmpeg-build
+      - run: tar -cf ffmpeg-build.tar -C ffmpeg-build .
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ffmpeg-build-${{ matrix.ffmpeg-version }}-${{ matrix.arch }}
+          path: ffmpeg-build.tar
+          retention-days: 1
+
+  build:
+    name: Build for nginx ${{ matrix.nginx-version }}${{ matrix.ffmpeg-version && format(' with ffmpeg {0}', matrix.ffmpeg-version) || '' }} (${{ matrix.build-mode }}, ubuntu-${{ matrix.ubuntu-version }}, ${{ matrix.arch }})
+    runs-on: ubuntu-${{ matrix.ubuntu-version }}${{ matrix.arch == 'arm64' && '-arm' || '' }}
+    if: ${{ !cancelled() }}
+    needs:
+      - matrix
+      - source
+      - ffmpeg
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrix.outputs.build) }}
+    steps:
+      - run: sudo apt-get update -qq
+      - run: |
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            libfdk-aac-dev \
+            libssl-dev \
+            libxml2-dev \
+            libpcre2-dev \
+            zlib1g-dev
+      - uses: actions/checkout@v7
+        with:
+          path: nginx-vod-module
+      - if: matrix.ffmpeg-version == 'distro'
         run: |
-          sudo cp -aT ffmpeg-cache /
+          sudo apt-get install -y --no-install-recommends \
+            libavcodec-dev \
+            libavfilter-dev \
+            libswscale-dev
+      - if: matrix.ffmpeg-version && matrix.ffmpeg-version != 'distro'
+        uses: actions/download-artifact@v8
+        with:
+          name: ffmpeg-build-${{ matrix.ffmpeg-version }}-${{ matrix.arch }}
+      - if: matrix.ffmpeg-version && matrix.ffmpeg-version != 'distro'
+        run: |
+          sudo tar -xf ffmpeg-build.tar -C /
           sudo ldconfig
-      - run: ./nginx-vod-module/scripts/fetch_latest.sh nginx.org/download nginx-${{ matrix.nginx-version }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: nginx-source-${{ matrix.nginx-version }}
+      - run: tar -xf nginx-source.tar
       - working-directory: nginx
         run: |
           ../nginx-vod-module/scripts/build_basic.sh \
             ${{ matrix.build-mode }}=../nginx-vod-module \
-            --with-cc-opt='-O3 -mpopcnt'
+            --with-cc-opt='-O3 ${{ matrix.arch == 'amd64' && '-mpopcnt' || '' }}'
           sudo make install
+          sudo mkdir -p /var/spool/nginx
       - run: /opt/nginx/sbin/nginx -V
+      - if: matrix.ffmpeg-version
+        working-directory: nginx
+        run: |
+          grep NGX_HAVE_LIB_AV_CODEC objs/ngx_auto_config.h
+          grep NGX_HAVE_LIB_AV_FILTER objs/ngx_auto_config.h
+          grep NGX_HAVE_LIB_SW_SCALE objs/ngx_auto_config.h
+      - if: matrix.build-mode == '--add-dynamic-module'
+        run: sudo /opt/nginx/sbin/nginx -t -g 'load_module modules/ngx_http_vod_module.so;'
       - working-directory: nginx-vod-module/test
         env:
           NGINX_SOURCE_DIR: ../../nginx
