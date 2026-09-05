@@ -1,0 +1,74 @@
+name: CodeQL
+
+on:
+  push:
+    branches:
+      - main
+      - v[0-9]+.x
+  pull_request:
+  schedule:
+    - cron: '25 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+env:
+  NGINX_VERSION: '1.30'
+
+jobs:
+  c-cpp:
+    name: Analyze c-cpp
+    runs-on: ubuntu-26.04
+    steps:
+      - run: sudo apt-get update -qq
+      - run: |
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            ca-certificates \
+            libavcodec-dev \
+            libavfilter-dev \
+            libpcre2-dev \
+            libssl-dev \
+            libswscale-dev \
+            libxml2-dev \
+            wget \
+            zlib1g-dev
+      - uses: actions/checkout@v7
+        with:
+          path: nginx-vod-module
+      - run: ./nginx-vod-module/scripts/fetch_latest.sh nginx.org/download "nginx-$NGINX_VERSION"
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: c-cpp
+          build-mode: manual
+          source-root: nginx-vod-module
+          config-file: nginx-vod-module/.github/codeql/codeql-config.yml
+      - working-directory: nginx
+        run: ../nginx-vod-module/scripts/build_basic.sh --add-module=../nginx-vod-module
+      - working-directory: nginx
+        run: |
+          grep NGX_HAVE_OPENSSL_EVP objs/ngx_auto_config.h
+          grep NGX_HAVE_LIB_AV_CODEC objs/ngx_auto_config.h
+          grep NGX_HAVE_LIB_AV_FILTER objs/ngx_auto_config.h
+          grep NGX_HAVE_LIB_SW_SCALE objs/ngx_auto_config.h
+          grep NGX_HAVE_LIBXML2 objs/ngx_auto_config.h
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: language:c-cpp
+          checkout_path: nginx-vod-module
+
+  actions:
+    name: Analyze actions
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: actions
+          build-mode: none
+          config-file: .github/codeql/codeql-config.yml
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: language:actions
