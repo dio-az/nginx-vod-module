@@ -1,0 +1,4 @@
+name: nginx-vod-module
+
+queries:
+  - uses: security-extended
