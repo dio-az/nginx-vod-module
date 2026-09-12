@@ -409,7 +409,7 @@ media_set_parse_string_array(void* ctx, vod_json_value_t* value, void* dest) {
 	vod_str_t* destination;
 	vod_status_t rc;
 
-	if (array->type != VOD_JSON_STRING) {
+	if (array->type != VOD_JSON_STRING && array->count > 0) {
 		vod_log_error(
 			VOD_LOG_ERR,
 			context->request_context->log,
