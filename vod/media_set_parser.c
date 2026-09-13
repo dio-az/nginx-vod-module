@@ -409,7 +409,7 @@ media_set_parse_string_array(void* ctx, vod_json_value_t* value, void* dest) {
 	vod_str_t* destination;
 	vod_status_t rc;
 
-	if (array->type != VOD_JSON_STRING) {
+	if (array->type != VOD_JSON_STRING && array->count > 0) {
 		vod_log_error(
 			VOD_LOG_ERR,
 			context->request_context->log,
@@ -420,7 +420,16 @@ media_set_parse_string_array(void* ctx, vod_json_value_t* value, void* dest) {
 		return VOD_BAD_MAPPING;
 	}
 
-	while (part != NULL) {
+	for (source = part->first;; source++) {
+		if ((void*)source >= part->last) {
+			if (part->next == NULL) {
+				break;
+			}
+
+			part = part->next;
+			source = part->first;
+		}
+
 		destination = vod_array_push(result);
 		if (destination == NULL) {
 			vod_log_debug0(
@@ -428,8 +437,6 @@ media_set_parse_string_array(void* ctx, vod_json_value_t* value, void* dest) {
 			);
 			return VOD_ALLOC_FAILED;
 		}
-
-		source = part->first;
 
 		destination->len = 0;
 		destination->data = vod_alloc(context->request_context->pool, source->len);
@@ -451,8 +458,6 @@ media_set_parse_string_array(void* ctx, vod_json_value_t* value, void* dest) {
 			);
 			return VOD_BAD_MAPPING;
 		}
-
-		part = part->next;
 	}
 
 	return VOD_OK;
