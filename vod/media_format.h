@@ -324,7 +324,8 @@ typedef struct media_track_s {
 	uint64_t first_frame_time_offset;
 	int64_t clip_start_time;
 	int64_t original_clip_time;
-	int32_t clip_from_frame_offset;
+	// gap from requested clipFrom to first retained key frame, in ticks
+	int64_t clip_from_frame_offset;
 	raw_atom_t raw_atoms[RTA_COUNT]; // mp4 only
 	void* source_clip;
 	media_encryption_t encryption_info;
