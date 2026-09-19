@@ -22,11 +22,7 @@ typedef struct {
 	// fixed
 	ngx_child_request_callback_t callback;
 	void* callback_context;
-
-	// deferred init
 	ngx_buf_t* response_buffer;
-	ngx_chain_t* response_chain;
-	ngx_list_t upstream_headers;
 
 	// temporary completion state
 	ngx_http_request_t* sr;
@@ -309,56 +305,6 @@ ngx_child_request_finished_handler(ngx_http_request_t* r, void* data, ngx_int_t 
 	return NGX_OK;
 }
 
-static void
-ngx_child_request_initial_wev_handler(ngx_http_request_t* r) {
-	ngx_child_request_context_t* ctx;
-	ngx_http_upstream_t* u;
-	ngx_connection_t* c;
-
-	c = r->connection;
-
-	// call the default request handler
-	r->write_event_handler = ngx_http_handler;
-	ngx_http_handler(r);
-
-	// if request was destroyed ignore
-	if (c->destroyed) {
-		return;
-	}
-
-	// at this point the upstream should have been allocated by the proxy module
-	u = r->upstream;
-	if (u == NULL) {
-		ngx_log_error(
-			NGX_LOG_WARN, r->connection->log, 0, "ngx_child_request_initial_wev_handler: upstream is null"
-		);
-		return;
-	}
-
-	// if the upstream module already started receiving, don't touch the buffer
-	if (u->buffer.start != NULL) {
-		ngx_log_error(
-			NGX_LOG_WARN, r->connection->log, 0, "ngx_child_request_initial_wev_handler: upstream buffer was already allocated"
-		);
-		return;
-	}
-
-	// initialize the upstream buffer
-	ctx = ngx_http_get_module_ctx(r, ngx_http_vod_module);
-	if (ctx == NULL) {
-		ngx_log_error(
-			NGX_LOG_WARN, r->connection->log, 0, "ngx_child_request_initial_wev_handler: context is null"
-		);
-		return;
-	}
-
-	r->out = ctx->response_chain;
-
-	// initialize the headers list
-	u->headers_in.headers = ctx->upstream_headers;
-	u->headers_in.headers.last = &u->headers_in.headers.part;
-}
-
 static ngx_int_t
 ngx_child_request_copy_headers(
 	ngx_http_request_t* r,
@@ -508,6 +454,7 @@ ngx_child_request_start(
 ) {
 	ngx_child_request_context_t* child_ctx;
 	ngx_http_post_subrequest_t* psr;
+	ngx_chain_t* response_chain = NULL;
 	ngx_http_request_t* sr;
 	ngx_uint_t flags;
 	ngx_str_t uri;
@@ -526,18 +473,6 @@ ngx_child_request_start(
 	child_ctx->callback = callback;
 	child_ctx->callback_context = callback_context;
 	child_ctx->response_buffer = response_buffer;
-
-	if (response_buffer != NULL) {
-		child_ctx->response_chain = ngx_alloc_chain_link(r->pool);
-		if (child_ctx->response_chain == NULL) {
-			ngx_log_debug0(
-				NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "ngx_child_request_start: ngx_alloc_chain_link failed"
-			);
-			return NGX_ERROR;
-		}
-
-		child_ctx->response_chain->buf = response_buffer;
-	}
 
 	// build the subrequest uri
 	uri.data = ngx_pnalloc(r->pool, internal_location->len + params->base_uri.len + 1);
@@ -565,12 +500,16 @@ ngx_child_request_start(
 	psr->data = r;
 
 	if (is_in_memory(child_ctx)) {
-		if (ngx_list_init(&child_ctx->upstream_headers, r->pool, 8, sizeof(ngx_table_elt_t)) != NGX_OK) {
+		response_chain = ngx_alloc_chain_link(r->pool);
+		if (response_chain == NULL) {
 			ngx_log_debug0(
-				NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "ngx_child_request_start: ngx_list_init failed"
+				NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "ngx_child_request_start: ngx_alloc_chain_link failed"
 			);
 			return NGX_ERROR;
 		}
+
+		response_chain->buf = response_buffer;
+		response_chain->next = NULL;
 
 		flags = NGX_HTTP_SUBREQUEST_WAITED | NGX_HTTP_SUBREQUEST_IN_MEMORY;
 	} else {
@@ -588,11 +527,10 @@ ngx_child_request_start(
 	// set the context of the subrequest
 	ngx_http_set_ctx(sr, child_ctx, ngx_http_vod_module);
 
-	// change the write_event_handler in order to inject the response buffer into the upstream
-	// (this can be done only after the proxy module allocates the upstream)
-	if (is_in_memory(child_ctx)) {
-		sr->write_event_handler = ngx_child_request_initial_wev_handler;
-	}
+	// a proxy_cache hit never enters the upstream, so attach the buffer before the subrequest
+	// starts. if sr->out is not set, nginx allocates a buffer of exactly the content length. that
+	// buffer has no room for the null terminator and ffmpeg padding
+	sr->out = response_chain;
 
 	// NOTE: ngx_http_subrequest always sets the subrequest method to GET
 	if (params->method == NGX_HTTP_HEAD) {
@@ -630,8 +568,6 @@ ngx_child_request_header_filter(ngx_http_request_t* r) {
 	}
 
 	if (is_in_memory(ctx)) {
-		// check the returned content length, this is required only for nginx 1.13.10+, in older
-		// versions the validation will be performed by the upstream module
 		if (r->upstream != NULL
 		    && r->upstream->headers_in.content_length_n
 		           > ctx->response_buffer->end - ctx->response_buffer->last) {
