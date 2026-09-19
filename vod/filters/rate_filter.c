@@ -42,6 +42,7 @@ rate_filter_scale_track_timestamps(media_track_t* track, uint32_t speed_num, uin
 		rescale_time(track->media_info.duration, track->media_info.timescale, 1000);
 
 	track->first_frame_time_offset *= speed_denom;
+	track->clip_from_frame_offset *= speed_denom;
 	track->total_frames_duration *= speed_denom;
 
 	track->media_info.min_frame_duration *= speed_denom;

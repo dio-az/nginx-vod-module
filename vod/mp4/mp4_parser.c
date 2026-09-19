@@ -113,7 +113,7 @@ typedef struct {
 	uint32_t last_frame;
 	uint32_t clip_to;
 	uint64_t first_frame_time_offset;
-	int32_t clip_from_frame_offset;
+	int64_t clip_from_frame_offset;
 	input_frame_t* frames;
 	uint32_t frame_count;
 	uint64_t total_frames_size;
@@ -683,11 +683,12 @@ mp4_parser_parse_stts_atom(atom_info_t* atom_info, frames_parse_context_t* conte
 	uint32_t sample_count;
 	uint32_t sample_duration;
 	uint32_t entries;
-	uint64_t clip_from;
 	uint64_t start_time;
 	uint64_t end_time;
-	uint64_t clip_to;
+	uint64_t clip_from = 0;
+	uint64_t requested_clip_from;
 	uint64_t clip_from_accum_duration = 0;
+	uint64_t clip_to;
 	uint64_t accum_duration;
 	uint64_t next_accum_duration;
 	int64_t empty_duration;
@@ -736,7 +737,8 @@ mp4_parser_parse_stts_atom(atom_info_t* atom_info, frames_parse_context_t* conte
 	next_accum_duration = accum_duration + (uint64_t)sample_duration * sample_count;
 
 	if (context->parse_params.clip_from > 0) {
-		clip_from = (((uint64_t)context->parse_params.clip_from * timescale) / 1000);
+		clip_from = ((uint64_t)context->parse_params.clip_from * timescale) / 1000;
+		requested_clip_from = clip_from;
 
 		for (;;) {
 			if (clip_from + sample_duration <= next_accum_duration) {
@@ -813,15 +815,14 @@ mp4_parser_parse_stts_atom(atom_info_t* atom_info, frames_parse_context_t* conte
 			// update the parse params clip from so that subsequent tracks will have their
 			// timestamps start from the same position
 			context->parse_params.clip_from = (accum_duration * 1000) / timescale;
-			clip_from = (((uint64_t)context->parse_params.clip_from * timescale) / 1000);
+			clip_from = ((uint64_t)context->parse_params.clip_from * timescale) / 1000;
 		}
 
 		// calculate the clip from duration
 		clip_from_accum_duration = accum_duration;
 
-		context->clip_from_frame_offset = clip_from_accum_duration - clip_from;
-	} else {
-		clip_from = 0;
+		// measure against requested position, realigned clip_from loses the gap
+		context->clip_from_frame_offset = clip_from_accum_duration - requested_clip_from;
 	}
 
 	// skip to the sample containing the start time

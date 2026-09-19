@@ -829,7 +829,7 @@ hls_muxer_simulate_get_iframes(
 
 	// initialize the repeat count, segment end, and the per stream limit
 	repeat_count = cur_item->repeat_count - 1;
-	segment_end = cur_item->duration;
+	segment_end = cur_item->time + cur_item->duration;
 
 	if (repeat_count <= 0 && (cur_item + 1 >= last_item || cur_item[1].discontinuity)) {
 		hls_muxer_simulation_set_segment_limit_unlimited(&state);
@@ -860,6 +860,7 @@ hls_muxer_simulate_get_iframes(
 				}
 
 				repeat_count = cur_item->repeat_count;
+				segment_end = cur_item->time;
 			}
 
 			repeat_count--;
