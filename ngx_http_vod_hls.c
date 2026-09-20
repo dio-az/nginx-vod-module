@@ -2,6 +2,7 @@
 #include <ngx_md5.h>
 #include "ngx_http_vod_submodule.h"
 #include "ngx_http_vod_utils.h"
+#include "vod/media_format.h"
 #include "vod/subtitle/webvtt_builder.h"
 #include "vod/hls/hls_muxer.h"
 #include "vod/mp4/mp4_fragment.h"
@@ -71,23 +72,16 @@ ngx_conf_enum_t hls_container_formats[] = {
 
 static ngx_uint_t
 ngx_http_vod_hls_get_container_format(ngx_http_vod_hls_loc_conf_t* conf, media_set_t* media_set) {
-	media_track_t* track;
+	media_info_t* media_info = &media_set->filtered_tracks->media_info;
 
-	if (conf->m3u8_config.container_format != HLS_CONTAINER_AUTO) {
-		return conf->m3u8_config.container_format;
-	}
+	// NOTE: a non-video track behaves like AVC
+	uint32_t video_codec_id =
+		media_info->media_type == MEDIA_TYPE_VIDEO ? media_info->codec_id : VOD_CODEC_ID_AVC;
 
-	if (conf->encryption_method == HLS_ENC_SAMPLE_AES_CTR) {
-		return HLS_CONTAINER_FMP4;
-	}
-
-	track = media_set->filtered_tracks;
-	if (track->media_info.media_type == MEDIA_TYPE_VIDEO
-	    && track->media_info.codec_id != VOD_CODEC_ID_AVC) {
-		return HLS_CONTAINER_FMP4;
-	}
-
-	return HLS_CONTAINER_MPEGTS;
+	uint32_t container_format = conf->m3u8_config.container_format;
+	return m3u8_builder_is_fmp4_container(container_format, conf->encryption_method, video_codec_id)
+	         ? HLS_CONTAINER_FMP4
+	         : HLS_CONTAINER_MPEGTS;
 }
 
 #if (NGX_HAVE_OPENSSL_EVP)
@@ -456,8 +450,10 @@ ngx_http_vod_hls_handle_iframe_playlist(
 	ngx_http_vod_submodule_context_t* submodule_context, ngx_str_t* response, ngx_str_t* content_type
 ) {
 	ngx_http_vod_loc_conf_t* conf = submodule_context->conf;
+	media_set_t* media_set = &submodule_context->media_set;
 	hls_mpegts_muxer_conf_t muxer_conf;
 	ngx_str_t base_url = ngx_null_string;
+	ngx_uint_t container_format;
 	vod_status_t rc;
 
 	if (conf->hls.encryption_method != HLS_ENC_NONE) {
@@ -470,7 +466,7 @@ ngx_http_vod_hls_handle_iframe_playlist(
 		return ngx_http_vod_status_to_ngx_error(submodule_context->r, VOD_BAD_REQUEST);
 	}
 
-	if (submodule_context->media_set.audio_filtering_needed) {
+	if (media_set->audio_filtering_needed) {
 		ngx_log_error(
 			NGX_LOG_ERR,
 			submodule_context->request_context.log,
@@ -489,28 +485,44 @@ ngx_http_vod_hls_handle_iframe_playlist(
 		}
 	}
 
-	if (ngx_http_vod_hls_get_container_format(&conf->hls, &submodule_context->media_set)
-	    == HLS_CONTAINER_FMP4) {
-		ngx_log_error(
-			NGX_LOG_ERR,
-			submodule_context->request_context.log,
-			0,
-			"ngx_http_vod_hls_handle_iframe_playlist: iframes playlist not supported with fmp4 container"
-		);
-		return ngx_http_vod_status_to_ngx_error(submodule_context->r, VOD_BAD_REQUEST);
-	}
+	container_format = ngx_http_vod_hls_get_container_format(&conf->hls, media_set);
 
-	rc = ngx_http_vod_hls_init_muxer_conf(submodule_context, &muxer_conf);
-	if (rc != NGX_OK) {
-		return rc;
+	if (container_format == HLS_CONTAINER_FMP4) {
+		if (!media_set->segmenter_conf->align_to_key_frames) {
+			ngx_log_error(
+				NGX_LOG_ERR,
+				submodule_context->request_context.log,
+				0,
+				"ngx_http_vod_hls_handle_iframe_playlist: \"vod_align_segments_to_key_frames\" must be set for fmp4"
+			);
+			return ngx_http_vod_status_to_ngx_error(submodule_context->r, VOD_BAD_REQUEST);
+		}
+
+		if (media_set->clip_count != 1
+		    || media_set->total_track_count != 1
+		    || media_set->track_count[MEDIA_TYPE_VIDEO] != 1) {
+			ngx_log_error(
+				NGX_LOG_ERR,
+				submodule_context->request_context.log,
+				0,
+				"ngx_http_vod_hls_handle_iframe_playlist: single video track required for fmp4"
+			);
+			return ngx_http_vod_status_to_ngx_error(submodule_context->r, VOD_BAD_REQUEST);
+		}
+	} else {
+		rc = ngx_http_vod_hls_init_muxer_conf(submodule_context, &muxer_conf);
+		if (rc != NGX_OK) {
+			return rc;
+		}
 	}
 
 	rc = m3u8_builder_build_iframe_playlist(
 		&submodule_context->request_context,
 		&conf->hls.m3u8_config,
-		&muxer_conf,
+		container_format == HLS_CONTAINER_FMP4 ? NULL : &muxer_conf,
+		container_format,
 		&base_url,
-		&submodule_context->media_set,
+		media_set,
 		response
 	);
 	if (rc != VOD_OK) {
@@ -901,9 +913,9 @@ static const ngx_http_vod_request_t hls_index_request = {
 
 static const ngx_http_vod_request_t hls_iframes_request = {
 	REQUEST_FLAG_SINGLE_TRACK_PER_MEDIA_TYPE | REQUEST_FLAG_PARSE_ALL_CLIPS,
-	PARSE_FLAG_FRAMES_ALL_EXCEPT_OFFSETS | PARSE_FLAG_PARSED_EXTRA_DATA_SIZE,
+	PARSE_FLAG_FRAMES_ALL_EXCEPT_OFFSETS | PARSE_FLAG_PARSED_EXTRA_DATA_SIZE | PARSE_FLAG_INITIAL_PTS_DELAY,
 	REQUEST_CLASS_OTHER,
-	SUPPORTED_CODECS_TS,
+	SUPPORTED_CODECS,
 	HLS_TIMESCALE,
 	ngx_http_vod_hls_handle_iframe_playlist,
 	NULL,
@@ -1040,8 +1052,6 @@ ngx_http_vod_hls_merge_loc_conf(
 
 	ngx_conf_merge_uint_value(conf->encryption_method, prev->encryption_method, HLS_ENC_NONE);
 
-	m3u8_builder_init_config(&conf->m3u8_config, base->segmenter.max_segment_duration);
-
 	if (conf->encryption_method != HLS_ENC_NONE && !base->drm_enabled) {
 		ngx_conf_log_error(
 			NGX_LOG_EMERG, cf, 0, "\"vod_drm_enabled\" must be set when \"vod_hls_encryption_method\" is not none"
@@ -1064,6 +1074,12 @@ ngx_http_vod_hls_merge_loc_conf(
 	if (conf->m3u8_config.container_format == HLS_CONTAINER_FMP4 && conf->m3u8_config.m3u8_version < 6) {
 		ngx_conf_log_error(
 			NGX_LOG_WARN, cf, 0, "\"vod_hls_version\" must be at least 6 when \"vod_hls_container_format\" is fmp4"
+		);
+	}
+
+	if (conf->m3u8_config.output_iframes_playlist && conf->m3u8_config.m3u8_version < 4) {
+		ngx_conf_log_error(
+			NGX_LOG_WARN, cf, 0, "\"vod_hls_version\" must be at least 4 when \"vod_hls_output_iframes_playlist\" is on"
 		);
 	}
 

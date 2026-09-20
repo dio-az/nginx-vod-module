@@ -21,6 +21,10 @@ enum {
 	SUBTITLE_FORMAT_SMPTE_TT,
 };
 
+typedef void (*dash_get_iframe_positions_callback_t)(
+	void* context, uint32_t segment_index, uint32_t frame_duration, uint32_t frame_start, uint32_t frame_size
+);
+
 typedef u_char* (*dash_write_extra_traf_atoms_callback_t)(void* context, u_char* p, size_t mdat_atom_start);
 
 typedef u_char* (*dash_write_mdat_atom_callback_t)(void* context, u_char* p);
@@ -77,6 +81,14 @@ vod_status_t dash_packager_build_fragment_header(
 	bool_t size_only,
 	vod_str_t* result,
 	size_t* total_fragment_size
+);
+
+vod_status_t dash_packager_simulate_iframe_ranges(
+	request_context_t* request_context,
+	segment_durations_t* segment_durations,
+	media_set_t* media_set,
+	dash_get_iframe_positions_callback_t callback,
+	void* context
 );
 
 #endif // __DASH_PACKAGER_H__
