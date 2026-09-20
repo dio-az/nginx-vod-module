@@ -1540,8 +1540,7 @@ dash_packager_build_mpd(
 // fragment writing code
 
 static uint64_t
-dash_packager_get_earliest_pres_time(media_set_t* media_set, media_track_t* track) {
-	uint64_t result;
+dash_packager_get_clip_pres_time(media_set_t* media_set, media_track_t* track) {
 	uint64_t clip_start_time;
 
 	if (media_set->use_discontinuity) {
@@ -1553,20 +1552,35 @@ dash_packager_get_earliest_pres_time(media_set_t* media_set, media_track_t* trac
 		}
 	}
 
-	result = dash_rescale_millis(track->clip_start_time - clip_start_time)
-	       + track->first_frame_time_offset;
+	return dash_rescale_millis(track->clip_start_time - clip_start_time);
+}
 
-	if (track->frame_count > 0) {
-		result += track->frames.first_frame[0].pts_delay;
+static uint64_t
+dash_packager_get_frame_pres_time(
+	media_track_t* track, uint64_t clip_pres_time, uint64_t dts, uint32_t pts_delay
+) {
+	uint64_t result = clip_pres_time + dts + pts_delay;
 
 #ifndef DISABLE_PTS_DELAY_COMPENSATION
-		if (track->media_info.media_type == MEDIA_TYPE_VIDEO) {
-			result -= track->media_info.u.video.initial_pts_delay;
-		}
-#endif
+	if (track->media_info.media_type == MEDIA_TYPE_VIDEO) {
+		result -= track->media_info.u.video.initial_pts_delay;
 	}
+#endif
 
 	return result;
+}
+
+static uint64_t
+dash_packager_get_earliest_pres_time(media_set_t* media_set, media_track_t* track) {
+	uint64_t clip_pres_time = dash_packager_get_clip_pres_time(media_set, track);
+
+	if (track->frame_count == 0) {
+		return clip_pres_time + track->first_frame_time_offset;
+	}
+
+	return dash_packager_get_frame_pres_time(
+		track, clip_pres_time, track->first_frame_time_offset, track->frames.first_frame[0].pts_delay
+	);
 }
 
 static u_char*
@@ -1643,6 +1657,156 @@ dash_packager_init_sidx_params(media_set_t* media_set, media_sequence_t* sequenc
 	result->timescale = DASH_TIMESCALE;
 }
 
+static size_t
+dash_packager_get_styp_sidx_atoms_size(bool_t large_timestamps) {
+	return sizeof(styp_atom)
+	     + ATOM_HEADER_SIZE
+	     + (large_timestamps ? sizeof(sidx64_atom_t) : sizeof(sidx_atom_t));
+}
+
+static size_t
+dash_packager_get_moof_atom_size(
+	uint32_t media_type,
+	uint32_t frame_count,
+	uint32_t sample_description_index,
+	bool_t large_timestamps,
+	size_t extra_traf_atoms_size,
+	size_t* traf_atom_size_ptr
+) {
+	size_t tfhd_atom_size;
+	size_t traf_atom_size;
+
+	tfhd_atom_size = ATOM_HEADER_SIZE + sizeof(tfhd_atom_t);
+	if (sample_description_index > 0) {
+		tfhd_atom_size += sizeof(uint32_t);
+	}
+
+	traf_atom_size = ATOM_HEADER_SIZE
+	               + tfhd_atom_size
+	               + ATOM_HEADER_SIZE
+	               + (large_timestamps ? sizeof(tfdt64_atom_t) : sizeof(tfdt_atom_t))
+	               + mp4_fragment_get_trun_atom_size(media_type, frame_count)
+	               + extra_traf_atoms_size;
+
+	if (traf_atom_size_ptr != NULL) {
+		*traf_atom_size_ptr = traf_atom_size;
+	}
+
+	return ATOM_HEADER_SIZE + ATOM_HEADER_SIZE + sizeof(mfhd_atom_t) + traf_atom_size;
+}
+
+vod_status_t
+dash_packager_simulate_iframe_ranges(
+	request_context_t* request_context,
+	segment_durations_t* segment_durations,
+	media_set_t* media_set,
+	dash_get_iframe_positions_callback_t callback,
+	void* context
+) {
+	media_track_t* track = media_set->sequences[0].filtered_clips[0].first_track;
+	segment_duration_item_t* last_item;
+	segment_duration_item_t* cur_item;
+	frame_list_part_t* part;
+	input_frame_t* last_frame;
+	input_frame_t* cur_frame;
+	uint64_t clip_pres_time;
+	uint64_t earliest_pres_time = 0;
+	uint64_t segment_end;
+	uint64_t segment_end_dts;
+	uint64_t dts;
+	uint32_t last_segment_index;
+	uint32_t segment_index;
+	uint32_t first_frame_size = 0;
+	uint32_t frame_count;
+
+	if (track->media_info.media_type != MEDIA_TYPE_VIDEO) {
+		vod_log_error(
+			VOD_LOG_ERR,
+			request_context->log,
+			0,
+			"dash_packager_simulate_iframe_ranges: media type %uD is not video",
+			track->media_info.media_type
+		);
+		return VOD_BAD_REQUEST;
+	}
+
+	if (segment_durations->item_count == 0) {
+		return VOD_OK;
+	}
+
+	clip_pres_time = dash_packager_get_clip_pres_time(media_set, track);
+
+	part = &track->frames;
+	cur_frame = part->first_frame;
+	last_frame = part->last_frame;
+	dts = track->first_frame_time_offset;
+
+	// the boundaries can use a different timescale and origin than the frames. the first boundary
+	// is the time of the first frame.
+	last_item = segment_durations->items + segment_durations->item_count;
+	for (cur_item = segment_durations->items; cur_item < last_item; cur_item++) {
+		// ignore empty segments (keyframe alignment)
+		if (cur_item->duration == 0) {
+			continue;
+		}
+
+		segment_index = cur_item->segment_index;
+		last_segment_index = segment_index + cur_item->repeat_count;
+		segment_end = cur_item->time - segment_durations->items[0].time;
+
+		for (; segment_index < last_segment_index; segment_index++) {
+			segment_end += cur_item->duration;
+			segment_end_dts =
+				track->first_frame_time_offset
+				+ rescale_time(segment_end, segment_durations->timescale, track->media_info.timescale);
+
+			frame_count = 0;
+
+			while (dts < segment_end_dts) {
+				if (cur_frame >= last_frame) {
+					if (part->next == NULL) {
+						break;
+					}
+
+					part = part->next;
+					cur_frame = part->first_frame;
+					last_frame = part->last_frame;
+					continue;
+				}
+
+				if (frame_count == 0) {
+					first_frame_size = cur_frame->size;
+					earliest_pres_time = dash_packager_get_frame_pres_time(
+						track, clip_pres_time, dts, cur_frame->pts_delay
+					);
+				}
+
+				frame_count++;
+				dts += cur_frame->duration;
+				cur_frame++;
+			}
+
+			if (frame_count == 0) {
+				continue;
+			}
+
+			callback(
+				context,
+				segment_index,
+				rescale_time(cur_item->duration, segment_durations->timescale, 1000),
+				dash_packager_get_styp_sidx_atoms_size(earliest_pres_time > UINT_MAX),
+				dash_packager_get_moof_atom_size(
+					track->media_info.media_type, frame_count, 0, earliest_pres_time > UINT_MAX, 0, NULL
+				)
+					+ ATOM_HEADER_SIZE
+					+ first_frame_size // mdat
+			);
+		}
+	}
+
+	return VOD_OK;
+}
+
 vod_status_t
 dash_packager_build_fragment_header(
 	request_context_t* request_context,
@@ -1660,8 +1824,6 @@ dash_packager_build_fragment_header(
 	uint32_t duration;
 	size_t first_frame_offset;
 	size_t mdat_atom_size;
-	size_t trun_atom_size;
-	size_t tfhd_atom_size;
 	size_t moof_atom_size;
 	size_t traf_atom_size;
 	size_t result_size;
@@ -1673,28 +1835,18 @@ dash_packager_build_fragment_header(
 	dash_packager_init_sidx_params(media_set, sequence, &sidx_params);
 
 	mdat_atom_size = ATOM_HEADER_SIZE + sequence->total_frame_size;
-	trun_atom_size =
-		mp4_fragment_get_trun_atom_size(first_track->media_info.media_type, sequence->total_frame_count);
 
-	tfhd_atom_size = ATOM_HEADER_SIZE + sizeof(tfhd_atom_t);
-	if (sample_description_index > 0) {
-		tfhd_atom_size += sizeof(uint32_t);
-	}
-
-	traf_atom_size =
-		ATOM_HEADER_SIZE
-		+ tfhd_atom_size
-		+ ATOM_HEADER_SIZE
-		+ (sidx_params.earliest_pres_time > UINT_MAX ? sizeof(tfdt64_atom_t) : sizeof(tfdt_atom_t))
-		+ trun_atom_size
-		+ extensions->extra_traf_atoms_size;
-
-	moof_atom_size = ATOM_HEADER_SIZE + ATOM_HEADER_SIZE + sizeof(mfhd_atom_t) + traf_atom_size;
+	moof_atom_size = dash_packager_get_moof_atom_size(
+		first_track->media_info.media_type,
+		sequence->total_frame_count,
+		sample_description_index,
+		sidx_params.earliest_pres_time > UINT_MAX,
+		extensions->extra_traf_atoms_size,
+		&traf_atom_size
+	);
 
 	*total_fragment_size =
-		sizeof(styp_atom)
-		+ ATOM_HEADER_SIZE
-		+ (sidx_params.earliest_pres_time > UINT_MAX ? sizeof(sidx64_atom_t) : sizeof(sidx_atom_t))
+		dash_packager_get_styp_sidx_atoms_size(sidx_params.earliest_pres_time > UINT_MAX)
 		+ moof_atom_size
 		+ mdat_atom_size;
 
