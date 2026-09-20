@@ -188,6 +188,50 @@ ngx_http_vod_hls_init_encryption_params(
 }
 #endif // NGX_HAVE_OPENSSL_EVP
 
+// resolves the encryption params of a playlist request, including the key uri
+static ngx_int_t
+ngx_http_vod_hls_init_playlist_encryption_params(
+	hls_encryption_params_t* encryption_params,
+	ngx_http_vod_submodule_context_t* submodule_context,
+	ngx_uint_t container_format
+) {
+#if (NGX_HAVE_OPENSSL_EVP)
+	ngx_http_vod_loc_conf_t* conf = submodule_context->conf;
+	ngx_int_t rc;
+
+	rc = ngx_http_vod_hls_init_encryption_params(encryption_params, submodule_context, container_format);
+	if (rc != NGX_OK) {
+		return rc;
+	}
+
+	if (encryption_params->type == HLS_ENC_NONE) {
+		return NGX_OK;
+	}
+
+	if (conf->hls.encryption_key_uri == NULL) {
+		encryption_params->key_uri.len = 0;
+		return NGX_OK;
+	}
+
+	if (ngx_http_complex_value(
+			submodule_context->r, conf->hls.encryption_key_uri, &encryption_params->key_uri
+		)
+	    != NGX_OK) {
+		ngx_log_debug0(
+			NGX_LOG_DEBUG_HTTP,
+			submodule_context->request_context.log,
+			0,
+			"ngx_http_vod_hls_init_playlist_encryption_params: ngx_http_complex_value failed"
+		);
+		return NGX_ERROR;
+	}
+#else
+	encryption_params->type = HLS_ENC_NONE;
+#endif // NGX_HAVE_OPENSSL_EVP
+
+	return NGX_OK;
+}
+
 static ngx_int_t
 ngx_http_vod_hls_get_default_id3_data(ngx_http_vod_submodule_context_t* submodule_context, ngx_str_t* id3_data) {
 	media_set_t* media_set;
@@ -287,10 +331,7 @@ ngx_http_vod_hls_handle_master_playlist(
 	ngx_str_t base_url = ngx_null_string;
 	hls_encryption_params_t encryption_params;
 	vod_status_t rc;
-
-#if (NGX_HAVE_OPENSSL_EVP)
 	ngx_uint_t container_format;
-#endif // NGX_HAVE_OPENSSL_EVP
 
 	if (conf->hls.absolute_master_urls) {
 		rc = ngx_http_vod_get_base_url(submodule_context->r, conf->base_url, &empty_string, &base_url);
@@ -299,37 +340,16 @@ ngx_http_vod_hls_handle_master_playlist(
 		}
 	}
 
-#if (NGX_HAVE_OPENSSL_EVP)
 	container_format =
 		ngx_http_vod_hls_get_container_format(&conf->hls, &submodule_context->media_set);
 
 	// TODO: add multi key support
-	rc = ngx_http_vod_hls_init_encryption_params(&encryption_params, submodule_context, container_format);
+	rc = ngx_http_vod_hls_init_playlist_encryption_params(
+		&encryption_params, submodule_context, container_format
+	);
 	if (rc != NGX_OK) {
 		return rc;
 	}
-
-	if (encryption_params.type != HLS_ENC_NONE) {
-		if (conf->hls.encryption_key_uri != NULL) {
-			if (ngx_http_complex_value(
-					submodule_context->r, conf->hls.encryption_key_uri, &encryption_params.key_uri
-				)
-			    != NGX_OK) {
-				ngx_log_debug0(
-					NGX_LOG_DEBUG_HTTP,
-					submodule_context->request_context.log,
-					0,
-					"ngx_http_vod_hls_handle_master_playlist: ngx_http_complex_value failed"
-				);
-				return NGX_ERROR;
-			}
-		} else {
-			encryption_params.key_uri.len = 0;
-		}
-	}
-#else
-	encryption_params.type = HLS_ENC_NONE;
-#endif // NGX_HAVE_OPENSSL_EVP
 
 	rc = m3u8_builder_build_master_playlist(
 		&submodule_context->request_context,
@@ -390,33 +410,12 @@ ngx_http_vod_hls_handle_index_playlist(
 	container_format =
 		ngx_http_vod_hls_get_container_format(&conf->hls, &submodule_context->media_set);
 
-#if (NGX_HAVE_OPENSSL_EVP)
-	rc = ngx_http_vod_hls_init_encryption_params(&encryption_params, submodule_context, container_format);
+	rc = ngx_http_vod_hls_init_playlist_encryption_params(
+		&encryption_params, submodule_context, container_format
+	);
 	if (rc != NGX_OK) {
 		return rc;
 	}
-
-	if (encryption_params.type != HLS_ENC_NONE) {
-		if (conf->hls.encryption_key_uri != NULL) {
-			if (ngx_http_complex_value(
-					submodule_context->r, conf->hls.encryption_key_uri, &encryption_params.key_uri
-				)
-			    != NGX_OK) {
-				ngx_log_debug0(
-					NGX_LOG_DEBUG_HTTP,
-					submodule_context->request_context.log,
-					0,
-					"ngx_http_vod_hls_handle_index_playlist: ngx_http_complex_value failed"
-				);
-				return NGX_ERROR;
-			}
-		} else {
-			encryption_params.key_uri.len = 0;
-		}
-	}
-#else
-	encryption_params.type = HLS_ENC_NONE;
-#endif // NGX_HAVE_OPENSSL_EVP
 
 	rc = m3u8_builder_build_index_playlist(
 		&submodule_context->request_context,
@@ -451,20 +450,11 @@ ngx_http_vod_hls_handle_iframe_playlist(
 ) {
 	ngx_http_vod_loc_conf_t* conf = submodule_context->conf;
 	media_set_t* media_set = &submodule_context->media_set;
+	hls_encryption_params_t encryption_params;
 	hls_mpegts_muxer_conf_t muxer_conf;
 	ngx_str_t base_url = ngx_null_string;
 	ngx_uint_t container_format;
 	vod_status_t rc;
-
-	if (conf->hls.encryption_method != HLS_ENC_NONE) {
-		ngx_log_error(
-			NGX_LOG_ERR,
-			submodule_context->request_context.log,
-			0,
-			"ngx_http_vod_hls_handle_iframe_playlist: iframes playlist not supported with encryption"
-		);
-		return ngx_http_vod_status_to_ngx_error(submodule_context->r, VOD_BAD_REQUEST);
-	}
 
 	if (media_set->audio_filtering_needed) {
 		ngx_log_error(
@@ -487,6 +477,13 @@ ngx_http_vod_hls_handle_iframe_playlist(
 
 	container_format = ngx_http_vod_hls_get_container_format(&conf->hls, media_set);
 
+	rc = ngx_http_vod_hls_init_playlist_encryption_params(
+		&encryption_params, submodule_context, container_format
+	);
+	if (rc != NGX_OK) {
+		return rc;
+	}
+
 	if (container_format == HLS_CONTAINER_FMP4) {
 		if (!media_set->segmenter_conf->align_to_key_frames) {
 			ngx_log_error(
@@ -494,6 +491,16 @@ ngx_http_vod_hls_handle_iframe_playlist(
 				submodule_context->request_context.log,
 				0,
 				"ngx_http_vod_hls_handle_iframe_playlist: \"vod_align_segments_to_key_frames\" must be set for fmp4"
+			);
+			return ngx_http_vod_status_to_ngx_error(submodule_context->r, VOD_BAD_REQUEST);
+		}
+
+		if (encryption_params.type == HLS_ENC_SAMPLE_AES_CTR) {
+			ngx_log_error(
+				NGX_LOG_ERR,
+				submodule_context->request_context.log,
+				0,
+				"ngx_http_vod_hls_handle_iframe_playlist: iframes playlist not supported with sample-aes-ctr"
 			);
 			return ngx_http_vod_status_to_ngx_error(submodule_context->r, VOD_BAD_REQUEST);
 		}
@@ -510,6 +517,16 @@ ngx_http_vod_hls_handle_iframe_playlist(
 			return ngx_http_vod_status_to_ngx_error(submodule_context->r, VOD_BAD_REQUEST);
 		}
 	} else {
+		if (encryption_params.type != HLS_ENC_NONE) {
+			ngx_log_error(
+				NGX_LOG_ERR,
+				submodule_context->request_context.log,
+				0,
+				"ngx_http_vod_hls_handle_iframe_playlist: iframes playlist not supported with encryption in mpeg-ts"
+			);
+			return ngx_http_vod_status_to_ngx_error(submodule_context->r, VOD_BAD_REQUEST);
+		}
+
 		rc = ngx_http_vod_hls_init_muxer_conf(submodule_context, &muxer_conf);
 		if (rc != NGX_OK) {
 			return rc;
@@ -520,6 +537,7 @@ ngx_http_vod_hls_handle_iframe_playlist(
 		&submodule_context->request_context,
 		&conf->hls.m3u8_config,
 		container_format == HLS_CONTAINER_FMP4 ? NULL : &muxer_conf,
+		&encryption_params,
 		container_format,
 		&base_url,
 		media_set,

@@ -50,7 +50,8 @@
 ### Limitations
 
 - Track selection and playback rate change are not supported in progressive download.
-- I-frames playlist generation is not supported when encryption is enabled.
+- I-frames playlist generation is not supported for MPEG-TS when encryption is enabled, nor for
+  SAMPLE-AES-CTR encrypted fMP4.
 - I-frames playlist generation for fMP4 requires `vod_align_segments_to_key_frames on`.
 
 ### Compilation
