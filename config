@@ -4,21 +4,6 @@ ngx_module_libs=
 VOD_SRCS=
 VOD_DEPS=
 
-# taken from echo-nginx-module
-# nginx won't have HTTP_POSTPONE_FILTER_MODULE & HTTP_POSTPONE_FILTER_SRCS
-# defined since 1.9.11
-if test -z "$HTTP_POSTPONE_FILTER_MODULE"; then
-    HTTP_POSTPONE_FILTER_MODULE=ngx_http_postpone_filter_module
-    HTTP_POSTPONE_FILTER_SRCS=src/http/ngx_http_postpone_filter_module.c
-fi
-
-# This module depends upon the postpone filter being activated
-if [ "$HTTP_POSTPONE" = NO ]; then
-    HTTP_FILTER_MODULES="$HTTP_FILTER_MODULES $HTTP_POSTPONE_FILTER_MODULE"
-    HTTP_SRCS="$HTTP_SRCS $HTTP_POSTPONE_FILTER_SRCS"
-    HTTP_POSTPONE=YES
-fi
-
 # zlib
 #
 if [ $ZLIB = NONE ]; then
@@ -396,17 +381,9 @@ VOD_SRCS="$VOD_SRCS                                           \
           $ngx_addon_dir/vod/write_buffer_queue.c             \
           "
 
-if [ -n "$ngx_module_link" ]; then
-    ngx_module_type=HTTP_AUX_FILTER
-    ngx_module_name=ngx_http_vod_module
-    ngx_module_deps="$VOD_DEPS"
-    ngx_module_srcs="$VOD_SRCS"
+ngx_module_type=HTTP_AUX_FILTER
+ngx_module_name=ngx_http_vod_module
+ngx_module_deps="$VOD_DEPS"
+ngx_module_srcs="$VOD_SRCS"
 
-    . auto/module
-else
-    HTTP_AUX_FILTER_MODULES="$HTTP_AUX_FILTER_MODULES ngx_http_vod_module"
-    NGX_ADDON_DEPS="$NGX_ADDON_DEPS $VOD_DEPS"
-    NGX_ADDON_SRCS="$NGX_ADDON_SRCS $VOD_SRCS"
-    CORE_INCS="$CORE_INCS $ngx_module_incs"
-    CORE_LIBS="$CORE_LIBS $ngx_module_libs"
-fi
+. auto/module
