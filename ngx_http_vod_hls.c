@@ -45,12 +45,6 @@
 #define ID3_TEXT_JSON_SEQUENCE_ID_PREFIX_FORMAT "{\"timestamp\":%uL,\"sequenceId\":\""
 #define ID3_TEXT_JSON_SEQUENCE_ID_SUFFIX "\"}"
 
-// content types
-static u_char m3u8_content_type[] = "application/vnd.apple.mpegurl";
-static u_char encryption_key_content_type[] = "application/octet-stream";
-static u_char mpeg_ts_content_type[] = "video/MP2T";
-static u_char vtt_content_type[] = "text/vtt";
-
 static const u_char ts_file_ext[] = ".ts";
 static const u_char m4s_file_ext[] = ".m4s";
 static const u_char vtt_file_ext[] = ".vtt";
@@ -100,7 +94,7 @@ ngx_http_vod_hls_init_encryption_iv(u_char* iv, uint32_t segment_index) {
 	u_char* p;
 
 	// the IV is the segment index in big endian
-	vod_memzero(iv, AES_BLOCK_SIZE - sizeof(uint32_t));
+	ngx_memzero(iv, AES_BLOCK_SIZE - sizeof(uint32_t));
 	segment_index++;
 	p = iv + AES_BLOCK_SIZE - sizeof(uint32_t);
 	*p++ = (u_char)(segment_index >> 24);
@@ -303,7 +297,7 @@ ngx_http_vod_hls_get_default_id3_data(ngx_http_vod_submodule_context_t* submodul
 	media_set = &submodule_context->media_set;
 	sequence_id = &media_set->sequences[0].id;
 	if (sequence_id->len != 0) {
-		sequence_id_escape = vod_escape_json(NULL, sequence_id->data, sequence_id->len);
+		sequence_id_escape = ngx_escape_json(NULL, sequence_id->data, sequence_id->len);
 		data_size = sizeof(ID3_TEXT_JSON_SEQUENCE_ID_PREFIX_FORMAT)
 		          + VOD_INT64_LEN
 		          + sequence_id->len
@@ -330,15 +324,15 @@ ngx_http_vod_hls_get_default_id3_data(ngx_http_vod_submodule_context_t* submodul
 	id3_data->data = p;
 
 	if (sequence_id->len != 0) {
-		p = vod_sprintf(p, ID3_TEXT_JSON_SEQUENCE_ID_PREFIX_FORMAT, timestamp);
+		p = ngx_sprintf(p, ID3_TEXT_JSON_SEQUENCE_ID_PREFIX_FORMAT, timestamp);
 		if (sequence_id_escape) {
-			p = (u_char*)vod_escape_json(p, sequence_id->data, sequence_id->len);
+			p = (u_char*)ngx_escape_json(p, sequence_id->data, sequence_id->len);
 		} else {
-			p = vod_copy(p, sequence_id->data, sequence_id->len);
+			p = ngx_copy(p, sequence_id->data, sequence_id->len);
 		}
-		p = vod_copy(p, ID3_TEXT_JSON_SEQUENCE_ID_SUFFIX, sizeof(ID3_TEXT_JSON_SEQUENCE_ID_SUFFIX));
+		p = ngx_copy(p, ID3_TEXT_JSON_SEQUENCE_ID_SUFFIX, sizeof(ID3_TEXT_JSON_SEQUENCE_ID_SUFFIX));
 	} else {
-		p = vod_sprintf(p, ID3_TEXT_JSON_FORMAT, timestamp);
+		p = ngx_sprintf(p, ID3_TEXT_JSON_FORMAT, timestamp);
 	}
 
 	id3_data->len = p - id3_data->data;
@@ -359,8 +353,7 @@ ngx_http_vod_hls_init_muxer_conf(
 	conf->align_pts = hls_conf->align_pts;
 
 	if (!hls_conf->output_id3_timestamps) {
-		conf->id3_data.data = NULL;
-		conf->id3_data.len = 0;
+		ngx_str_null(&conf->id3_data);
 		return NGX_OK;
 	}
 
@@ -429,8 +422,7 @@ ngx_http_vod_hls_handle_master_playlist(
 		return ngx_http_vod_status_to_ngx_error(submodule_context->r, rc);
 	}
 
-	content_type->data = m3u8_content_type;
-	content_type->len = sizeof(m3u8_content_type) - 1;
+	ngx_str_set(content_type, "application/vnd.apple.mpegurl");
 
 	return NGX_OK;
 }
@@ -497,8 +489,7 @@ ngx_http_vod_hls_handle_index_playlist(
 		return ngx_http_vod_status_to_ngx_error(submodule_context->r, rc);
 	}
 
-	content_type->data = m3u8_content_type;
-	content_type->len = sizeof(m3u8_content_type) - 1;
+	ngx_str_set(content_type, "application/vnd.apple.mpegurl");
 
 	return NGX_OK;
 }
@@ -613,8 +604,7 @@ ngx_http_vod_hls_handle_iframe_playlist(
 		return ngx_http_vod_status_to_ngx_error(submodule_context->r, rc);
 	}
 
-	content_type->data = m3u8_content_type;
-	content_type->len = sizeof(m3u8_content_type) - 1;
+	ngx_str_set(content_type, "application/vnd.apple.mpegurl");
 
 	return NGX_OK;
 }
@@ -643,8 +633,7 @@ ngx_http_vod_hls_handle_encryption_key(
 	response->data = encryption_key;
 	response->len = BUFFER_CACHE_KEY_SIZE;
 
-	content_type->data = encryption_key_content_type;
-	content_type->len = sizeof(encryption_key_content_type) - 1;
+	ngx_str_set(content_type, "application/octet-stream");
 
 	return NGX_OK;
 }
@@ -725,8 +714,7 @@ ngx_http_vod_hls_init_ts_frame_processor(
 	*frame_processor = (ngx_http_vod_frame_processor_t)hls_muxer_process;
 	*frame_processor_state = state;
 
-	content_type->len = sizeof(mpeg_ts_content_type) - 1;
-	content_type->data = (u_char*)mpeg_ts_content_type;
+	ngx_str_set(content_type, "video/MP2T");
 
 	return NGX_OK;
 }
@@ -1075,8 +1063,7 @@ ngx_http_vod_hls_handle_vtt_segment(
 		return ngx_http_vod_status_to_ngx_error(submodule_context->r, rc);
 	}
 
-	content_type->len = sizeof(vtt_content_type) - 1;
-	content_type->data = (u_char*)vtt_content_type;
+	ngx_str_set(content_type, "text/vtt");
 
 	return NGX_OK;
 }

@@ -375,8 +375,9 @@ ngx_http_vod_merge_loc_conf(ngx_conf_t* cf, void* parent, void* child) {
 		return NGX_CONF_ERROR;
 	}
 
-	ngx_strlow(conf->proxy_header.lowcase_key, conf->proxy_header.key.data, conf->proxy_header.key.len);
-	conf->proxy_header.hash = ngx_hash_key(conf->proxy_header.lowcase_key, conf->proxy_header.key.len);
+	conf->proxy_header.hash = ngx_hash_strlow(
+		conf->proxy_header.lowcase_key, conf->proxy_header.key.data, conf->proxy_header.key.len
+	);
 
 	// init the hash table of the uri params (clipTo, clipFrom etc.)
 	rc = ngx_http_vod_init_uri_params_hash(cf, conf);

@@ -4,9 +4,6 @@
 #include "ngx_buffer_cache.h"
 #include "ngx_queue.h"
 
-// macros
-#define container_of(ptr, type, member) (type*)((char*)(ptr) - offsetof(type, member))
-
 // constants
 #define CACHE_LOCK_EXPIRATION (5)
 #define ENTRY_LOCK_EXPIRATION (5)

@@ -505,8 +505,7 @@ webvtt_parse_frames(
 			return VOD_ALLOC_FAILED;
 		}
 	} else {
-		header->len = sizeof(WEBVTT_HEADER_NEWLINES) - 1;
-		header->data = (u_char*)WEBVTT_HEADER_NEWLINES;
+		vod_str_set(header, WEBVTT_HEADER_NEWLINES);
 	}
 
 	if ((parse_params->parse_type & PARSE_FLAG_FRAMES_ALL) == 0) {
