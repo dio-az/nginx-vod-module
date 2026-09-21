@@ -52,7 +52,7 @@ ngx_http_vod_create_loc_conf(ngx_conf_t* cf) {
 	conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_vod_loc_conf_t));
 	if (conf == NULL) {
 		ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cf->log, 0, "ngx_http_vod_create_loc_conf: ngx_pcalloc failed");
-		return NGX_CONF_ERROR;
+		return NULL;
 	}
 
 	// base params
