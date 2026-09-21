@@ -5387,8 +5387,15 @@ ngx_http_vod_map_media_set_apply(ngx_http_vod_ctx_t* ctx, ngx_str_t* mapping, in
 
 	ngx_perf_counter_end(ctx->perf_counters, perf_counter_context, PC_PARSE_MEDIA_SET);
 
+	// a single clip's duration is folded into the source clip_to by media_set_parse_source, so it
+	// needs no timing layer to apply it - more than one clip would require concatenation. clip_count
+	// must be checked before dereferencing clips[0]: media_set_parse_json returns early, leaving it
+	// uninitialized, when the requested segment is past the end of the set. live is excluded because
+	// segmenter_get_live_window folds the window start into the timing only, not into the source.
 	if (mapped_media_set.sequence_count == 1
-	    && mapped_media_set.timing.durations == NULL
+	    && mapped_media_set.clip_count == 1
+	    && mapped_media_set.type != MEDIA_SET_LIVE
+	    && (mapped_media_set.timing.durations == NULL || mapped_media_set.timing.total_count == 1)
 	    && mapped_media_set.sequences[0].clips[0]->type == MEDIA_CLIP_SOURCE
 	    && !mapped_media_set.has_multi_sequences
 	    && mapped_media_set.closed_captions == NULL) {
@@ -5419,9 +5426,11 @@ ngx_http_vod_map_media_set_apply(ngx_http_vod_ctx_t* ctx, ngx_str_t* mapping, in
 
 			return NGX_OK;
 		}
-	}
 
-	if (ctx->request == NULL) {
+		// still a single plain source, only the clip window / track selection is non-default
+		// (clipFrom, a clip duration, tracks) - progressive download applies those by byte
+		// range, the same way it already does for the clipfrom/clipto url params.
+	} else if (ctx->request == NULL) {
 		ngx_log_error(
 			NGX_LOG_ERR,
 			ctx->submodule_context.request_context.log,
