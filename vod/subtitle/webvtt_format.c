@@ -1,4 +1,4 @@
-#include "../media_format.h"
+#include "webvtt_format.h"
 #include "../media_clip.h"
 #include "../media_set.h"
 #include "subtitle_format.h"
@@ -60,7 +60,7 @@ webvtt_init_process(vod_log_t* log) {
 }
 
 void
-webvtt_exit_process() {
+webvtt_exit_process(void) {
 	if (iconv_utf16le_to_utf8 != ICONV_INVALID_DESC) {
 		iconv_close(iconv_utf16le_to_utf8);
 		iconv_utf16le_to_utf8 = ICONV_INVALID_DESC;

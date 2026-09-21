@@ -1,4 +1,4 @@
-#include "../media_format.h"
+#include "dfxp_format.h"
 #include "../media_clip.h"
 #include "../media_set.h"
 #include "subtitle_format.h"
@@ -799,12 +799,12 @@ dfxp_parse_frames(
 }
 
 void
-dfxp_init_process() {
+dfxp_init_process(void) {
 	xmlInitParser();
 }
 
 void
-dfxp_exit_process() {
+dfxp_exit_process(void) {
 	xmlCleanupParser();
 }
 

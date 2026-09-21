@@ -80,7 +80,7 @@ ngx_http_vod_parse_string(
 
 bool_t
 ngx_http_vod_split_uri_file_name(ngx_str_t* uri, int components, ngx_str_t* path, ngx_str_t* file_name) {
-	u_char* cur_pos = uri->data + uri->len - 1;
+	u_char* cur_pos;
 
 	for (cur_pos = uri->data + uri->len - 1; cur_pos >= uri->data; cur_pos--) {
 		if (*cur_pos != '/') {

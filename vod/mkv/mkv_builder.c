@@ -222,7 +222,7 @@ mkv_write_info(u_char* p, media_track_t* track) {
 }
 
 static size_t
-mkv_get_max_info_size() {
+mkv_get_max_info_size(void) {
 	return EBML_MASTER_SIZE + EBML_UINT_SIZE + EBML_FLOAT_SIZE + ebml_string_size(mkv_writing_app.len) * 2;
 }
 
@@ -272,7 +272,7 @@ mkv_write_content_encodings(u_char* p, drm_info_t* drm_info) {
 }
 
 static size_t
-mkv_get_max_content_encodings_size() {
+mkv_get_max_content_encodings_size(void) {
 	return 4 * EBML_MASTER_SIZE + 5 * EBML_UINT_SIZE + EBML_MAX_NUM_SIZE + EBML_ID_SIZE + DRM_KID_SIZE;
 }
 
@@ -294,7 +294,7 @@ mkv_write_track_video(u_char* p, media_track_t* track) {
 }
 
 static size_t
-mkv_get_max_track_video_size() {
+mkv_get_max_track_video_size(void) {
 	return EBML_MASTER_SIZE + 2 * EBML_UINT_SIZE;
 }
 
@@ -321,7 +321,7 @@ mkv_write_track_audio(u_char* p, media_track_t* track) {
 }
 
 static size_t
-mkv_get_max_track_audio_size() {
+mkv_get_max_track_audio_size(void) {
 	return EBML_MASTER_SIZE + EBML_FLOAT_SIZE + 2 * EBML_UINT_SIZE;
 }
 
