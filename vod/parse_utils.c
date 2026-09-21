@@ -1,19 +1,33 @@
 #include "media_format.h"
 #include "parse_utils.h"
 
-static int
-parse_utils_get_hex_char_value(int ch) {
+static vod_inline int
+parse_utils_get_hex_nibble(u_char ch) {
 	if (ch >= '0' && ch <= '9') {
-		return (ch - '0');
+		return ch - '0';
 	}
 
-	ch = (ch | 0x20); // lower case
+	ch |= 0x20;
 
 	if (ch >= 'a' && ch <= 'f') {
-		return (ch - 'a' + 10);
+		return ch - 'a' + 10;
 	}
 
 	return -1;
+}
+
+static vod_inline int
+parse_utils_get_hex_byte(const u_char* p) {
+	int high;
+	int low;
+
+	high = parse_utils_get_hex_nibble(p[0]);
+	low = parse_utils_get_hex_nibble(p[1]);
+	if (high < 0 || low < 0) {
+		return -1;
+	}
+
+	return (high << 4) | low;
 }
 
 vod_status_t
@@ -21,8 +35,7 @@ parse_utils_parse_guid_string(vod_str_t* str, u_char* output) {
 	u_char* cur_pos;
 	u_char* end_pos;
 	u_char* output_end = output + VOD_GUID_SIZE;
-	int c1;
-	int c2;
+	int value;
 
 	cur_pos = str->data;
 	end_pos = cur_pos + str->len;
@@ -36,13 +49,12 @@ parse_utils_parse_guid_string(vod_str_t* str, u_char* output) {
 			return VOD_BAD_DATA;
 		}
 
-		c1 = parse_utils_get_hex_char_value(cur_pos[0]);
-		c2 = parse_utils_get_hex_char_value(cur_pos[1]);
-		if (c1 < 0 || c2 < 0) {
+		value = parse_utils_get_hex_byte(cur_pos);
+		if (value < 0) {
 			return VOD_BAD_DATA;
 		}
 
-		*output++ = ((c1 << 4) | c2);
+		*output++ = (u_char)value;
 		cur_pos += 2;
 	}
 
