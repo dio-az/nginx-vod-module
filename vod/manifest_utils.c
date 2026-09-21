@@ -464,8 +464,8 @@ track_group_rbtree_insert_value(vod_rbtree_node_t* temp, vod_rbtree_node_t* node
 	track_group_t *n, *t;
 
 	for (;;) {
-		n = vod_container_of(node, track_group_t, rbtree_node);
-		t = vod_container_of(temp, track_group_t, rbtree_node);
+		n = vod_rbtree_data(node, track_group_t, rbtree_node);
+		t = vod_rbtree_data(temp, track_group_t, rbtree_node);
 
 		if (node->key != temp->key) {
 			p = (node->key < temp->key) ? &temp->left : &temp->right;
@@ -497,7 +497,7 @@ track_group_rbtree_lookup(vod_rbtree_t* rbtree, track_group_key_t* key, uint32_t
 	sentinel = rbtree->sentinel;
 
 	while (node != sentinel) {
-		n = vod_container_of(node, track_group_t, rbtree_node);
+		n = vod_rbtree_data(node, track_group_t, rbtree_node);
 
 		if (hash != node->key) {
 			node = (hash < node->key) ? node->left : node->right;
@@ -670,8 +670,8 @@ track_groups_to_adaptation_sets(
 	vod_queue_t* list = &groups->list;
 	vod_queue_t* node;
 
-	for (node = vod_queue_head(list); node != list; node = node->next) {
-		group = vod_container_of(node, track_group_t, list_node);
+	for (node = vod_queue_head(list); node != vod_queue_sentinel(list); node = vod_queue_next(node)) {
+		group = vod_queue_data(node, track_group_t, list_node);
 
 		cur_track_ptr = track_group_to_adaptation_set(group, cur_track_ptr, cur_adaptation_set);
 

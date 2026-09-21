@@ -177,7 +177,7 @@ ngx_buffer_cache_free_oldest_entry(ngx_buffer_cache_sh_t* cache, uint32_t expira
 	}
 
 	// verify the entry is not locked
-	entry = container_of(ngx_queue_head(&cache->used_queue), ngx_buffer_cache_entry_t, queue_node);
+	entry = ngx_queue_data(ngx_queue_head(&cache->used_queue), ngx_buffer_cache_entry_t, queue_node);
 	if (entry->ref_count > 0 && ngx_time() < entry->access_time + ENTRY_LOCK_EXPIRATION) {
 		return NULL;
 	}
@@ -220,7 +220,7 @@ ngx_buffer_cache_get_free_entry(ngx_buffer_cache_sh_t* cache) {
 
 	if (!ngx_queue_empty(&cache->free_queue)) {
 		// return the free queue head
-		return container_of(ngx_queue_head(&cache->free_queue), ngx_buffer_cache_entry_t, queue_node);
+		return ngx_queue_data(ngx_queue_head(&cache->free_queue), ngx_buffer_cache_entry_t, queue_node);
 	}
 
 	if ((u_char*)(cache->entries_end + 1) < cache->buffers_start) {
@@ -424,7 +424,7 @@ ngx_buffer_cache_store_gather(ngx_buffer_cache_t* cache, u_char* key, ngx_str_t*
 	entry->state = CES_ALLOCATED;
 	entry->ref_count = 1;
 	entry->node.key = hash;
-	memcpy(entry->key, key, BUFFER_CACHE_KEY_SIZE);
+	ngx_memcpy(entry->key, key, BUFFER_CACHE_KEY_SIZE);
 	entry->start_offset = target_buffer;
 	entry->buffer_size = buffer_size;
 
@@ -484,7 +484,7 @@ ngx_buffer_cache_get_stats(ngx_buffer_cache_t* cache, ngx_buffer_cache_stats_t* 
 
 	ngx_shmtx_lock(&cache->shpool->mutex);
 
-	memcpy(stats, &sh->stats, sizeof(sh->stats));
+	ngx_memcpy(stats, &sh->stats, sizeof(sh->stats));
 
 	stats->entries = sh->entries_end - sh->entries_start;
 	stats->data_size = sh->buffers_end - sh->buffers_start;

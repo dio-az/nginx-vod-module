@@ -165,9 +165,12 @@ void vod_log_error(vod_uint_t level, vod_log_t* log, int err, const char* fmt, .
 #define vod_strstrn ngx_strstrn
 #define vod_strcmp ngx_strcmp
 #define vod_strlen ngx_strlen
+#define vod_str_set(str, text) ngx_str_set(str, text)
+#define vod_str_null(str) ngx_str_null(str)
 #define vod_strncmp(s1, s2, n) ngx_strncmp(s1, s2, n)
 #define vod_strncasecmp(s1, s2, n) ngx_strncasecmp(s1, s2, n)
 #define vod_pstrdup(pool, src) ngx_pstrdup(pool, src)
+#define vod_tolower(c) ngx_tolower(c)
 #define vod_hextoi(line, n) ngx_hextoi(line, n)
 #define vod_escape_json(dst, src, size) ngx_escape_json(dst, src, size)
 
@@ -175,18 +178,24 @@ void vod_log_error(vod_uint_t level, vod_log_t* log, int err, const char* fmt, .
 #define vod_array_init(array, pool, n, size) ngx_array_init(array, pool, n, size)
 #define vod_array_push(array) ngx_array_push(array)
 #define vod_array_push_n(array, count) ngx_array_push_n(array, count)
-#define vod_array_destroy(a) ngx_array_destroy(array)
+#define vod_array_destroy(a) ngx_array_destroy(a)
 
 // queue macros
 #define vod_queue_init(q) ngx_queue_init(q)
 #define vod_queue_empty(h) ngx_queue_empty(h)
 #define vod_queue_insert_tail(h, x) ngx_queue_insert_tail(h, x)
 #define vod_queue_head(h) ngx_queue_head(h)
+#define vod_queue_last(h) ngx_queue_last(h)
+#define vod_queue_sentinel(h) ngx_queue_sentinel(h)
+#define vod_queue_next(q) ngx_queue_next(q)
+#define vod_queue_prev(q) ngx_queue_prev(q)
 #define vod_queue_remove(x) ngx_queue_remove(x)
+#define vod_queue_data(q, type, link) ngx_queue_data(q, type, link)
 
 // rbtree functions
 #define vod_rbtree_init(tree, s, i) ngx_rbtree_init(tree, s, i)
 #define vod_rbtree_insert(tree, node) ngx_rbtree_insert(tree, node)
+#define vod_rbtree_data(node, type, link) ngx_rbtree_data(node, type, link)
 #define vod_rbt_red(node) ngx_rbt_red(node)
 
 // hash functions

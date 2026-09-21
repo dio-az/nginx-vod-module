@@ -42,7 +42,7 @@ typedef struct {
 } ngx_child_request_hide_header_t;
 
 // constants
-static ngx_str_t ngx_http_vod_head_method = {4, (u_char*)"HEAD "};
+static ngx_str_t ngx_http_vod_head_method = ngx_string("HEAD ");
 
 static ngx_str_t range_key = ngx_string("Range");
 static u_char* range_lowcase_key = (u_char*)"range";

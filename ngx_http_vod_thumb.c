@@ -20,7 +20,6 @@
 	}
 
 static const u_char jpg_file_ext[] = ".jpg";
-static u_char jpeg_content_type[] = "image/jpeg";
 
 ngx_int_t
 ngx_http_vod_thumb_get_url(
@@ -83,8 +82,8 @@ ngx_http_vod_thumb_get_url(
 	// allocate the result buffer
 	p = ngx_pnalloc(submodule_context->request_context.pool, result_size);
 	if (p == NULL) {
-		vod_log_debug0(
-			VOD_LOG_DEBUG_LEVEL, submodule_context->request_context.log, 0, "ngx_http_vod_thumb_get_url: ngx_pnalloc failed"
+		ngx_log_debug0(
+			NGX_LOG_DEBUG_HTTP, submodule_context->request_context.log, 0, "ngx_http_vod_thumb_get_url: ngx_pnalloc failed"
 		);
 		return ngx_http_vod_status_to_ngx_error(r, VOD_ALLOC_FAILED);
 	}
@@ -93,19 +92,19 @@ ngx_http_vod_thumb_get_url(
 
 	// write the result
 	if (base_url.len != 0) {
-		p = vod_copy(p, base_url.data, base_url.len);
+		p = ngx_copy(p, base_url.data, base_url.len);
 	}
 
-	p = vod_copy(p, conf->thumb.file_name_prefix.data, conf->thumb.file_name_prefix.len);
-	p = vod_sprintf(p, "-%uL", request_params->segment_time);
-	p = vod_copy(p, request_params_str.data, request_params_str.len);
-	p = vod_copy(p, jpg_file_ext, sizeof(jpg_file_ext) - 1);
+	p = ngx_copy(p, conf->thumb.file_name_prefix.data, conf->thumb.file_name_prefix.len);
+	p = ngx_sprintf(p, "-%uL", request_params->segment_time);
+	p = ngx_copy(p, request_params_str.data, request_params_str.len);
+	p = ngx_copy(p, jpg_file_ext, sizeof(jpg_file_ext) - 1);
 
 	result->len = p - result->data;
 
 	if (result->len > result_size) {
-		vod_log_error(
-			VOD_LOG_ERR,
+		ngx_log_error(
+			NGX_LOG_ERR,
 			submodule_context->request_context.log,
 			0,
 			"ngx_http_vod_thumb_get_url: result length %uz exceeded allocated length %uz",
@@ -152,8 +151,7 @@ ngx_http_vod_thumb_init_frame_processor(
 
 	*frame_processor = (ngx_http_vod_frame_processor_t)thumb_grabber_process;
 
-	content_type->len = sizeof(jpeg_content_type) - 1;
-	content_type->data = (u_char*)jpeg_content_type;
+	ngx_str_set(content_type, "image/jpeg");
 
 	return NGX_OK;
 }

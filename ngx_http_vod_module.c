@@ -733,25 +733,16 @@ ngx_http_vod_set_next_segment_uri_var(ngx_http_request_t* r, ngx_http_variable_v
 	}
 
 	// file name is the component after the last '/'
-	file_name = uri->data;
-	for (p = uri->data; p < uri_end; p++) {
-		if (*p == '/') {
-			file_name = p + 1;
-		}
-	}
+	p = ngx_strrchr(uri->data, uri_end, '/');
+	file_name = p ? p + 1 : uri->data;
 
 	// segment file name is '<prefix>-<index>...': the index is the digit run after the first '-'
-	num_start = NULL;
-	for (p = file_name; p < uri_end; p++) {
-		if (*p == '-') {
-			num_start = p + 1;
-			break;
-		}
-	}
+	num_start = ngx_strlchr(file_name, uri_end, '-');
 	if (num_start == NULL) {
 		v->not_found = 1;
 		return NGX_OK;
 	}
+	num_start++;
 
 	segment_num = 0;
 	for (num_end = num_start; num_end < uri_end && *num_end >= '0' && *num_end <= '9'; num_end++) {
@@ -1520,8 +1511,8 @@ ngx_http_vod_update_source_tracks(request_context_t* request_context, media_clip
 		cur_track->original_clip_time = original_clip_time;
 		cur_track->file_info = file_info;
 
-		vod_log_debug1(
-			VOD_LOG_DEBUG_LEVEL,
+		ngx_log_debug1(
+			NGX_LOG_DEBUG_HTTP,
 			request_context->log,
 			0,
 			"ngx_http_vod_update_source_tracks: first frame dts is %uL",
@@ -5678,8 +5669,7 @@ ngx_http_vod_handler(ngx_http_request_t* r) {
 	perf_counters = ngx_perf_counter_get_state(conf->perf_counters_zone);
 
 	if (r->method == NGX_HTTP_OPTIONS) {
-		response.data = NULL;
-		response.len = 0;
+		ngx_str_null(&response);
 
 		rc = ngx_http_vod_send_header(r, response.len, &options_content_type, MEDIA_SET_VOD, NULL);
 		if (rc != NGX_OK) {
@@ -5763,7 +5753,7 @@ ngx_http_vod_handler(ngx_http_request_t* r) {
 		// calc request key from host + uri
 		ngx_md5_init(&md5);
 
-		base_url.len = 0;
+		ngx_str_null(&base_url);
 		rc = ngx_http_vod_get_base_url(r, conf->base_url, &empty_string, &base_url);
 		if (rc != NGX_OK) {
 			return rc;
@@ -5771,7 +5761,7 @@ ngx_http_vod_handler(ngx_http_request_t* r) {
 		ngx_md5_update(&md5, base_url.data, base_url.len);
 
 		if (conf->segments_base_url != NULL) {
-			base_url.len = 0;
+			ngx_str_null(&base_url);
 			rc = ngx_http_vod_get_base_url(r, conf->segments_base_url, &empty_string, &base_url);
 			if (rc != NGX_OK) {
 				return rc;

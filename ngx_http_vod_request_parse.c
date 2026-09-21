@@ -147,7 +147,7 @@ ngx_http_vod_extract_track_tokens(
 			// no index => all streams of the media type
 			vod_track_mask_set_all_bits(result[media_type]);
 		} else if (stream_index > MAX_TRACK_COUNT) {
-			vod_log_error(
+			ngx_log_error(
 				NGX_LOG_WARN,
 				r->connection->log,
 				0,
@@ -201,7 +201,7 @@ ngx_http_vod_parse_uri_file_name(
 		vod_set_bit(default_tracks_mask, 0);
 	}
 	for (media_type = 0; media_type < MEDIA_TYPE_COUNT; media_type++) {
-		vod_memcpy(
+		ngx_memcpy(
 			result->tracks_mask[media_type], default_tracks_mask, sizeof(result->tracks_mask[media_type])
 		);
 	}
@@ -394,7 +394,7 @@ ngx_http_vod_parse_uri_file_name(
 
 				// restore the global mask to the default
 				for (media_type = 0; media_type < MEDIA_TYPE_COUNT; media_type++) {
-					vod_memcpy(
+					ngx_memcpy(
 						result->tracks_mask[media_type],
 						default_tracks_mask,
 						sizeof(result->tracks_mask[media_type])
@@ -508,8 +508,7 @@ ngx_http_vod_parse_multi_uri(
 
 	result->prefix.data = uri->data;
 	result->prefix.len = uri->len;
-	result->postfix.data = NULL;
-	result->postfix.len = 0;
+	ngx_str_null(&result->postfix);
 
 	if (uri->len < multi_uri_suffix->len
 	    || ngx_memcmp(
@@ -518,8 +517,7 @@ ngx_http_vod_parse_multi_uri(
 			   multi_uri_suffix->len
 		   ) != 0) {
 		// not a multi uri
-		result->middle_parts[0].data = NULL;
-		result->middle_parts[0].len = 0;
+		ngx_str_null(&result->middle_parts[0]);
 		result->parts_count = 1;
 		return NGX_OK;
 	}
@@ -554,8 +552,7 @@ ngx_http_vod_parse_multi_uri(
 
 	if (last_comma_pos == NULL) {
 		// no commas at all
-		result->postfix.data = NULL;
-		result->postfix.len = 0;
+		ngx_str_null(&result->postfix);
 	} else {
 		// 1 comma or more
 		result->postfix.data = last_comma_pos;
@@ -564,8 +561,7 @@ ngx_http_vod_parse_multi_uri(
 
 	if (part_index == 0) {
 		// no commas at all or a single comma
-		result->middle_parts[0].data = NULL;
-		result->middle_parts[0].len = 0;
+		ngx_str_null(&result->middle_parts[0]);
 		result->parts_count = 1;
 	} else {
 		// 2 commas or more

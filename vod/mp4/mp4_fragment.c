@@ -2,10 +2,6 @@
 #include "mp4_defs.h"
 #include "mp4_write_stream.h"
 
-// content types
-static u_char mp4_video_content_type[] = "video/mp4";
-static u_char mp4_audio_content_type[] = "audio/mp4";
-
 u_char*
 mp4_fragment_write_mfhd_atom(u_char* p, uint32_t sequence_number) {
 	size_t atom_size = ATOM_HEADER_SIZE + sizeof(mfhd_atom_t);
@@ -354,10 +350,8 @@ mp4_fragment_frame_writer_process(fragment_writer_state_t* state) {
 void
 mp4_fragment_get_content_type(bool_t video, vod_str_t* content_type) {
 	if (video) {
-		content_type->data = mp4_video_content_type;
-		content_type->len = sizeof(mp4_video_content_type) - 1;
+		vod_str_set(content_type, "video/mp4");
 	} else {
-		content_type->data = mp4_audio_content_type;
-		content_type->len = sizeof(mp4_audio_content_type) - 1;
+		vod_str_set(content_type, "audio/mp4");
 	}
 }
