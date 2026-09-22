@@ -596,6 +596,9 @@ ngx_child_request_header_filter(ngx_http_request_t* r) {
 		if (r->headers_out.headers.last == &r->headers_out.headers.part) {
 			pr->headers_out.headers.last = &pr->headers_out.headers.part;
 		}
+		if (r->headers_out.trailers.last == &r->headers_out.trailers.part) {
+			pr->headers_out.trailers.last = &pr->headers_out.trailers.part;
+		}
 		ctx->send_header_result = ngx_http_send_header(pr);
 	} else {
 		// no status code, this can happen in case the proxy module got an invalid status line and
