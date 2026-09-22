@@ -3428,7 +3428,8 @@ ngx_http_vod_finalize_segment_response(ngx_http_vod_ctx_t* ctx) {
 	}
 
 	ctx->write_segment_buffer_context.chain_end->next = NULL;
-	ctx->write_segment_buffer_context.chain_end->buf->last_buf = 1;
+	ctx->write_segment_buffer_context.chain_end->buf->last_buf = (r == r->main) ? 1 : 0;
+	ctx->write_segment_buffer_context.chain_end->buf->last_in_chain = 1;
 
 	// send the response header
 	rc = ngx_http_vod_send_header(

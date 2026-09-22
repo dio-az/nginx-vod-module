@@ -90,7 +90,8 @@ ngx_http_vod_send_response(ngx_http_request_t* r, ngx_str_t* response, ngx_str_t
 	if (response->len > 0) {
 		b->temporary = 1;
 	}
-	b->last_buf = 1; // this is the last buffer in the buffer chain
+	b->last_buf = (r == r->main) ? 1 : 0;
+	b->last_in_chain = 1;
 
 	// attach the buffer to the chain
 	out.buf = b;
