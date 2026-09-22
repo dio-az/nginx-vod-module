@@ -393,12 +393,17 @@ ngx_child_request_copy_headers(
 		// add the header to the output list
 		*output = *ch;
 
+		output->next = NULL;
+
 		// update the header pointer, if exists
 		hh = ngx_hash_find(&cmcf->headers_in_hash, ch->hash, ch->lowcase_key, ch->key.len);
 		if (hh && hh->offset != 0) {
 			ph = (ngx_table_elt_t**)((char*)dest + hh->offset);
 
-			output->next = *ph;
+			while (*ph) {
+				ph = &(*ph)->next;
+			}
+
 			*ph = output;
 		}
 
@@ -407,7 +412,9 @@ ngx_child_request_copy_headers(
 
 	// add the extra header if needed
 	if (params->extra_header.key.len != 0) {
-		*output++ = params->extra_header;
+		*output = params->extra_header;
+		output->next = NULL;
+		output++;
 	}
 
 	// set the range if needed
