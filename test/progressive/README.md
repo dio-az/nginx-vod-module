@@ -40,6 +40,8 @@ they verify exactly the code that ships.
 - The async resume path of the mdat writer (VOD_AGAIN yields between cache reads) is structural: the
   loop mirrors `mp4_fragment_frame_writer_process`. The in-memory source returns each frame in one
   read, so the ordering and completion are tested but the yield/resume is exercised only in the lab.
-- End-to-end validation (a real feed, the full ftyp+moov+mdat produced, the file opened in an editor)
-  belongs in the lab - see `lab-test-multiclip-progressive.md` in the PA-26217 workbench refinement
-  area for a self-contained recipe (build the image, static 2-clip mapping, curl + ffprobe + editor).
+- End-to-end validation (a real source, the full ftyp+moov+mdat produced, the file opened in an
+  editor) needs a running nginx: configure `vod none` + `vod_mode mapped`, return a static multi-clip
+  mapping JSON (a `sequences[0].clips[]` array with per-clip `clipFrom` plus a `durations` array),
+  request the base mp4 URL, and check the result with `ffprobe` (one moov, one mdat, no moof) and a
+  full decode.
