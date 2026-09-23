@@ -15,6 +15,7 @@
 #include "ngx_file_reader.h"
 #include "ngx_buffer_cache.h"
 #include "vod/mp4/mp4_format.h"
+#include "vod/mp4/mp4_progressive_builder.h"
 #include "vod/mkv/mkv_format.h"
 #include "vod/subtitle/webvtt_format.h"
 #include "vod/subtitle/cap_format.h"
@@ -5215,6 +5216,131 @@ ngx_http_vod_handle_thumb_redirect(ngx_http_vod_ctx_t* ctx, media_set_t* media_s
 }
 #endif // NGX_HAVE_LIB_AV_CODEC
 
+////// Progressive download of multiple clips (non-fragmented MP4 concatenation)
+
+// A single, high timescale for every track. The module's timescale-update pass folds each clip's
+// per-frame durations (including the last-frame stretch to the clip boundary) into this timescale,
+// which is what makes the concatenated timeline continuous across splices. 90000 divides the common
+// video frame rates exactly; audio drift is corrected per frame from the cumulative dts.
+#define PROGRESSIVE_DOWNLOAD_TIMESCALE (90000)
+
+#define PROGRESSIVE_DOWNLOAD_SUPPORTED_CODECS \
+	(VOD_CODEC_FLAG(AVC)                      \
+	 | VOD_CODEC_FLAG(HEVC)                   \
+	 | VOD_CODEC_FLAG(AV1)                    \
+	 | VOD_CODEC_FLAG(AAC)                    \
+	 | VOD_CODEC_FLAG(AC3)                    \
+	 | VOD_CODEC_FLAG(EAC3)                   \
+	 | VOD_CODEC_FLAG(MP3)                    \
+	 | VOD_CODEC_FLAG(DTS)                    \
+	 | VOD_CODEC_FLAG(FLAC))
+
+// Builds the whole progressive response: ftyp + a non-fragmented moov whose sample tables span every
+// clip, + the mdat box header (output_buffer), then streams the mdat payload track by track. Used
+// only for multi-clip progressive downloads; single-clip progressive still uses the byte-range dump.
+static ngx_int_t
+ngx_http_vod_progressive_init_frame_processor(
+	ngx_http_vod_submodule_context_t* submodule_context,
+	segment_writer_t* segment_writer,
+	ngx_http_vod_frame_processor_t* frame_processor,
+	void** frame_processor_state,
+	ngx_str_t* output_buffer,
+	size_t* response_size,
+	ngx_str_t* content_type
+) {
+	request_context_t* request_context = &submodule_context->request_context;
+	media_set_t* media_set = &submodule_context->media_set;
+	pb_mdat_writer_state_t* state;
+	vod_str_t header;
+	vod_str_t ct;
+	size_t content_length;
+	vod_status_t rc;
+
+	rc = mp4_progressive_build_header(request_context, media_set, &header, &content_length, &ct);
+	if (rc != VOD_OK) {
+		ngx_log_debug1(
+			NGX_LOG_DEBUG_HTTP,
+			request_context->log,
+			0,
+			"ngx_http_vod_progressive_init_frame_processor: mp4_progressive_build_header failed %i",
+			rc
+		);
+		return ngx_http_vod_status_to_ngx_error(submodule_context->r, rc);
+	}
+
+	output_buffer->data = header.data;
+	output_buffer->len = header.len;
+	*response_size = content_length;
+	content_type->data = ct.data;
+	content_type->len = ct.len;
+
+	// no body for HEAD / header-only requests
+	if (ngx_http_vod_submodule_size_only(submodule_context)) {
+		return NGX_OK;
+	}
+
+	rc = mp4_progressive_mdat_writer_init(
+		request_context,
+		media_set,
+		segment_writer->write_tail,
+		segment_writer->context,
+		FALSE, // reuse_buffers - coalesce contiguous reads, like the fragment writer default
+		&state
+	);
+	if (rc != VOD_OK) {
+		ngx_log_debug1(
+			NGX_LOG_DEBUG_HTTP,
+			request_context->log,
+			0,
+			"ngx_http_vod_progressive_init_frame_processor: mp4_progressive_mdat_writer_init failed %i",
+			rc
+		);
+		return ngx_http_vod_status_to_ngx_error(submodule_context->r, rc);
+	}
+
+	*frame_processor = (ngx_http_vod_frame_processor_t)mp4_progressive_mdat_writer_process;
+	*frame_processor_state = state;
+
+	return NGX_OK;
+}
+
+// Synthetic request descriptor that routes a multi-clip progressive download through the frame
+// processing pipeline (parse frames of all clips, mux one video + one audio track) instead of the
+// single byte-range dump. init_frame_processor above turns the filtered tracks into one MP4.
+static const ngx_http_vod_request_t progressive_download_request = {
+	REQUEST_FLAG_SINGLE_TRACK_PER_MEDIA_TYPE | REQUEST_FLAG_PARSE_ALL_CLIPS,
+	PARSE_FLAG_FRAMES_ALL | PARSE_FLAG_INITIAL_PTS_DELAY | PARSE_FLAG_PARSED_EXTRA_DATA,
+	REQUEST_CLASS_SEGMENT,
+	PROGRESSIVE_DOWNLOAD_SUPPORTED_CODECS,
+	PROGRESSIVE_DOWNLOAD_TIMESCALE,
+	NULL,
+	ngx_http_vod_progressive_init_frame_processor,
+};
+
+// TRUE if a mapped media set can be concatenated into one non-fragmented MP4 by the progressive
+// path: a single sequence of plain source clips, VOD, no closed captions. Filter/dynamic clips are
+// excluded because they need their own frame production, which this path does not run.
+static bool_t
+ngx_http_vod_is_progressive_multiclip_supported(media_set_t* media_set) {
+	uint32_t i;
+
+	if (media_set->sequence_count != 1
+	    || media_set->has_multi_sequences
+	    || media_set->type == MEDIA_SET_LIVE
+	    || media_set->closed_captions != NULL
+	    || media_set->clip_count < 1) {
+		return FALSE;
+	}
+
+	for (i = 0; i < media_set->clip_count; i++) {
+		if (media_set->sequences[0].clips[i]->type != MEDIA_CLIP_SOURCE) {
+			return FALSE;
+		}
+	}
+
+	return TRUE;
+}
+
 static ngx_int_t
 ngx_http_vod_map_media_set_apply(ngx_http_vod_ctx_t* ctx, ngx_str_t* mapping, int* cache_index) {
 	ngx_http_vod_loc_conf_t* conf = ctx->submodule_context.conf;
@@ -5338,6 +5464,13 @@ ngx_http_vod_map_media_set_apply(ngx_http_vod_ctx_t* ctx, ngx_str_t* mapping, in
 
 	request_flags = ctx->request != NULL ? ctx->request->flags : 0;
 
+	// progressive download (request == NULL) may map to several clips that we concatenate into one
+	// non-fragmented MP4 - parse all of them so the whole set is materialized. Single-clip mappings
+	// are unaffected (total_count stays 1).
+	if (ctx->request == NULL) {
+		request_flags |= REQUEST_FLAG_PARSE_ALL_CLIPS;
+	}
+
 	if (conf->force_continuous_timestamps) {
 		request_flags |= REQUEST_FLAG_NO_DISCONTINUITY;
 	}
@@ -5431,13 +5564,20 @@ ngx_http_vod_map_media_set_apply(ngx_http_vod_ctx_t* ctx, ngx_str_t* mapping, in
 		// (clipFrom, a clip duration, tracks) - progressive download applies those by byte
 		// range, the same way it already does for the clipfrom/clipto url params.
 	} else if (ctx->request == NULL) {
-		ngx_log_error(
-			NGX_LOG_ERR,
-			ctx->submodule_context.request_context.log,
-			0,
-			"ngx_http_vod_map_media_set_apply: unsupported - non-trivial mapping in progressive download"
-		);
-		return ngx_http_vod_status_to_ngx_error(ctx->submodule_context.r, VOD_BAD_REQUEST);
+		if (ngx_http_vod_is_progressive_multiclip_supported(&mapped_media_set)) {
+			// more than one clip in a progressive download: the single byte-range dump cannot
+			// concatenate them. Switch to a synthetic request that rebuilds one non-fragmented moov
+			// spanning all clips and streams a single mdat, then fall through to adopt the mapped set.
+			ctx->request = &progressive_download_request;
+		} else {
+			ngx_log_error(
+				NGX_LOG_ERR,
+				ctx->submodule_context.request_context.log,
+				0,
+				"ngx_http_vod_map_media_set_apply: unsupported - non-trivial mapping in progressive download"
+			);
+			return ngx_http_vod_status_to_ngx_error(ctx->submodule_context.r, VOD_BAD_REQUEST);
+		}
 	}
 
 	if (ctx->submodule_context.media_set.sequence_count == 1

@@ -26,6 +26,21 @@ vod_status_t mp4_init_segment_build(
 	vod_str_t* result
 );
 
+// Extended variant: `stbl_atom_writers` (per-track, may be NULL) supplies populated sample tables
+// instead of the empty defaults, and `no_mvex` omits the mvex/trex atoms - together these turn the
+// init-segment builder into a non-fragmented (progressive) moov builder. Passing NULL/FALSE is
+// byte-for-byte identical to mp4_init_segment_build.
+vod_status_t mp4_init_segment_build_ex(
+	request_context_t* request_context,
+	media_set_t* media_set,
+	bool_t size_only,
+	atom_writer_t* extra_moov_atoms_writer,
+	atom_writer_t* stsd_atom_writers,
+	atom_writer_t* stbl_atom_writers,
+	bool_t no_mvex,
+	vod_str_t* result
+);
+
 vod_status_t mp4_init_segment_get_encrypted_stsd_writers(
 	request_context_t* request_context,
 	media_set_t* media_set,
