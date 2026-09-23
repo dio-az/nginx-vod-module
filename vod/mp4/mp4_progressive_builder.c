@@ -100,8 +100,11 @@ mp4_progressive_stbl_children_size(const pb_track_stats_t* s, bool_t use_co64, b
 	// stco / co64: one entry
 	size += ATOM_HEADER_SIZE + 8 + (use_co64 ? 8 : 4);
 
-	// stss: omitted when all frames are key frames
-	if (s->stss_count != s->frame_count) {
+	// stss: omitted when every sample is a sync sample. That is the all-key-frame case
+	// (stss_count == frame_count) and also the audio convention where no frame is flagged as a key
+	// frame (stss_count == 0) - an absent stss means "all samples are sync", whereas an empty stss
+	// would wrongly declare zero sync samples and break seeking.
+	if (s->stss_count != 0 && s->stss_count != s->frame_count) {
 		size += ATOM_HEADER_SIZE + 8 + (uint64_t)s->stss_count * 4;
 	}
 
@@ -305,7 +308,7 @@ mp4_progressive_write_stbl_children(
 	p = pb_write_stsc(p, s->frame_count);
 	p = pb_write_stsz(p, media_set, track_index, s);
 	p = pb_write_stco(p, chunk_offset, use_co64);
-	if (s->stss_count != s->frame_count) {
+	if (s->stss_count != 0 && s->stss_count != s->frame_count) {
 		p = pb_write_stss(p, media_set, track_index, s->stss_count);
 	}
 	if (emit_ctts) {
@@ -419,7 +422,7 @@ mp4_progressive_build_moov(
 
 	for (t = 0; t < ttc; t++) {
 		ctxs[t].media_set = media_set;
-		ctxs[t].stats = stats;
+		ctxs[t].stats = &stats[t];
 		ctxs[t].track_index = t;
 		ctxs[t].chunk_offset = 0;
 		ctxs[t].use_co64 = use_co64;
