@@ -47,6 +47,18 @@ ngx_array_push(ngx_array_t* a) {
 #define assert_string(val, expected) \
 	assert((val).len == sizeof(expected) - 1 && memcmp((val).data, expected, sizeof(expected) - 1) == 0)
 
+static vod_json_status_t
+test_json_parse(const char* string, vod_json_value_t* result, u_char* error, size_t error_size) {
+	size_t size = ngx_strlen(string) + 1;
+	u_char* buffer = ngx_palloc(pool, size);
+	if (buffer == NULL) {
+		return VOD_JSON_ALLOC_FAILED;
+	}
+
+	ngx_memcpy(buffer, string, size);
+	return vod_json_parse(pool, buffer, result, error, error_size);
+}
+
 bool_t
 test_valid_jsons() {
 	bool_t success = TRUE;
@@ -56,29 +68,29 @@ test_valid_jsons() {
 	ngx_int_t rc;
 	u_char error[128];
 
-	rc = vod_json_parse(pool, (u_char*)" null ", &result, error, sizeof(error));
+	rc = test_json_parse(" null ", &result, error, sizeof(error));
 	assert(rc == VOD_JSON_OK);
 	assert(result.type == VOD_JSON_NULL);
 
-	rc = vod_json_parse(pool, (u_char*)" true ", &result, error, sizeof(error));
+	rc = test_json_parse(" true ", &result, error, sizeof(error));
 	assert(rc == VOD_JSON_OK);
 	assert(result.type == VOD_JSON_BOOL && result.v.boolean);
 
-	rc = vod_json_parse(pool, (u_char*)" false ", &result, error, sizeof(error));
+	rc = test_json_parse(" false ", &result, error, sizeof(error));
 	assert(rc == VOD_JSON_OK);
 	assert(result.type == VOD_JSON_BOOL && !result.v.boolean);
 
-	rc = vod_json_parse(pool, (u_char*)" \"test\" ", &result, error, sizeof(error));
+	rc = test_json_parse(" \"test\" ", &result, error, sizeof(error));
 	assert(rc == VOD_JSON_OK);
 	assert(result.type == VOD_JSON_STRING);
 	assert_string(result.v.str, "test");
 
-	rc = vod_json_parse(pool, (u_char*)" \"fsdaf\\\"fsaf\nfdasf\\fdfas\" ", &result, error, sizeof(error));
+	rc = test_json_parse(" \"fsdaf\\\"fsaf\nfdasf\\fdfas\" ", &result, error, sizeof(error));
 	assert(rc == VOD_JSON_OK);
 	assert(result.type == VOD_JSON_STRING);
 	assert_string(result.v.str, "fsdaf\\\"fsaf\nfdasf\\fdfas");
 
-	rc = vod_json_parse(pool, (u_char*)" [ ] ", &result, error, sizeof(error));
+	rc = test_json_parse(" [ ] ", &result, error, sizeof(error));
 	assert(rc == VOD_JSON_OK);
 	assert(result.type == VOD_JSON_ARRAY);
 	assert(result.v.arr.count == 0);
@@ -94,7 +106,7 @@ test_valid_jsons() {
 	// assert(elements[3].type == VOD_JSON_STRING);
 	// assert_string(elements[3].v.str, "test");
 
-	rc = vod_json_parse(pool, (u_char*)" [ [ true ] ] ", &result, error, sizeof(error));
+	rc = test_json_parse(" [ [ true ] ] ", &result, error, sizeof(error));
 	assert(rc == VOD_JSON_OK);
 	assert(result.type == VOD_JSON_ARRAY);
 	assert(result.v.arr.type == VOD_JSON_ARRAY);
@@ -114,14 +126,13 @@ test_valid_jsons() {
 	// elements = (vod_json_value_t*)elements[0].v.arr.elts;
 	// assert(elements[0].type == VOD_JSON_NULL);
 
-	rc = vod_json_parse(pool, (u_char*)" { } ", &result, error, sizeof(error));
+	rc = test_json_parse(" { } ", &result, error, sizeof(error));
 	assert(rc == VOD_JSON_OK);
 	assert(result.type == VOD_JSON_OBJECT);
 	assert(result.v.obj.nelts == 0);
 
-	rc = vod_json_parse(
-		pool,
-		(u_char*)" { \"key1\" : null , \"key2\" : true , \"key3\" : false , \"key4\" : \"value\" }",
+	rc = test_json_parse(
+		" { \"key1\" : null , \"key2\" : true , \"key3\" : false , \"key4\" : \"value\" }",
 		&result,
 		error,
 		sizeof(error)
@@ -140,9 +151,7 @@ test_valid_jsons() {
 	assert(pairs[3].value.type == VOD_JSON_STRING);
 	assert_string(pairs[3].value.v.str, "value");
 
-	rc = vod_json_parse(
-		pool, (u_char*)" { \"key\" : { \"subkey\": \"value\" } } ", &result, error, sizeof(error)
-	);
+	rc = test_json_parse(" { \"key\" : { \"subkey\": \"value\" } } ", &result, error, sizeof(error));
 	assert(rc == VOD_JSON_OK);
 	assert(result.type == VOD_JSON_OBJECT);
 	assert(result.v.obj.nelts == 1);
@@ -155,12 +164,8 @@ test_valid_jsons() {
 	assert(pairs[0].value.type == VOD_JSON_STRING);
 	assert_string(pairs[0].value.v.str, "value");
 
-	rc = vod_json_parse(
-		pool,
-		(u_char*)" { \"key1\" : { \"subkey\": \"value\" } , \"key2\" : null } ",
-		&result,
-		error,
-		sizeof(error)
+	rc = test_json_parse(
+		" { \"key1\" : { \"subkey\": \"value\" } , \"key2\" : null } ", &result, error, sizeof(error)
 	);
 	assert(rc == VOD_JSON_OK);
 	assert(result.type == VOD_JSON_OBJECT);
@@ -176,7 +181,7 @@ test_valid_jsons() {
 	assert(pairs[0].value.type == VOD_JSON_STRING);
 	assert_string(pairs[0].value.v.str, "value");
 
-	rc = vod_json_parse(pool, (u_char*)" { \"key\" : [ \"value\" ] } ", &result, error, sizeof(error));
+	rc = test_json_parse(" { \"key\" : [ \"value\" ] } ", &result, error, sizeof(error));
 	assert(rc == VOD_JSON_OK);
 	assert(result.type == VOD_JSON_OBJECT);
 	assert(result.v.obj.nelts == 1);
@@ -187,7 +192,7 @@ test_valid_jsons() {
 	assert(pairs[0].value.v.arr.type == VOD_JSON_STRING);
 	assert_string(*(vod_str_t*)pairs[0].value.v.arr.part.first, "value");
 
-	rc = vod_json_parse(pool, (u_char*)" [ { \"key\" : \"value\" } ]", &result, error, sizeof(error));
+	rc = test_json_parse(" [ { \"key\" : \"value\" } ]", &result, error, sizeof(error));
 	assert(rc == VOD_JSON_OK);
 	assert(result.type == VOD_JSON_ARRAY);
 	assert(result.v.arr.count == 1);
@@ -229,7 +234,7 @@ test_bad_jsons() {
 	u_char error[128];
 
 	for (cur_test = tests; *cur_test; cur_test++) {
-		rc = vod_json_parse(pool, (u_char*)*cur_test, &result, error, sizeof(error));
+		rc = test_json_parse(*cur_test, &result, error, sizeof(error));
 		if (rc != expected_rc) {
 			printf("Error: %s - expected %" PRIdPTR " got %" PRIdPTR "\n", *cur_test, expected_rc, rc);
 			success = FALSE;
