@@ -2,9 +2,8 @@
 #define __MEDIA_SET_H__
 
 // includes
-#include "media_format.h"
 #include "media_clip.h"
-#include "json_parser.h"
+#include "media_format.h"
 
 // constants
 #define SEGMENT_BASE_TIME_RELATIVE (ULLONG_MAX)

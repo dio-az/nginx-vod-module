@@ -2,13 +2,12 @@
 //     mpegts_encoder.c repackTs.c vod_array.c muxer.c read_cache.c
 // ./repack /opt/kaltura/app/alpha/web/repack.ts 0 10
 
-#include <sys/stat.h>
-#include <unistd.h>
 #include <fcntl.h>
-
+#include <unistd.h>
+#include <sys/stat.h>
 #include "mp4_parser.h"
-#include "read_cache.h"
 #include "muxer.h"
+#include "read_cache.h"
 
 static bool_t
 write_file(void* context, const u_char* buffer, uint32_t size) {

@@ -1,5 +1,4 @@
 #include "mp4_to_annexb_filter.h"
-#include "../read_stream.h"
 #include "../avc_defs.h"
 
 #if (VOD_HAVE_OPENSSL_EVP)

@@ -39,9 +39,9 @@
 
 // includes
 #include <inttypes.h>
-#include <sys/types.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 
 // macros
 #define vod_min(x, y) (((x) < (y)) ? (x) : (y))

@@ -1,6 +1,6 @@
 // include
-#include "ngx_cycle.h"
 #include "ngx_buffer_cache_internal.h"
+#include "ngx_cycle.h"
 
 // macros
 #define RAND(min, max) (rand() % ((max) - (min) + 1) + (min))

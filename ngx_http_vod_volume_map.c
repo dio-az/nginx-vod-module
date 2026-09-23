@@ -1,7 +1,11 @@
 #include <ngx_http.h>
+#include "ngx_http_vod_conf.h"
+#include "ngx_http_vod_request_parse.h"
 #include "ngx_http_vod_submodule.h"
 #include "ngx_http_vod_utils.h"
+#include "vod/common.h"
 #include "vod/filters/volume_map.h"
+#include "vod/media_format.h"
 
 #define VOLUME_MAP_TIMESCALE (1000)
 

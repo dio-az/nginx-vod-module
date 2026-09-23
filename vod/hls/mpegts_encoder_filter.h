@@ -2,9 +2,9 @@
 #define __MPEGTS_ENCODER_FILTER_H__
 
 // includes
-#include "hls_encryption.h"
 #include "../media_format.h"
 #include "../write_buffer_queue.h"
+#include "hls_encryption.h"
 #include "media_filter.h"
 
 // constants

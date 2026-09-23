@@ -1,8 +1,8 @@
-#include "mp4_defs.h"
 #include "mp4_pssh.h"
+#include "../udrm.h"
+#include "mp4_defs.h"
 #include "mp4_init_segment.h"
 #include "mp4_write_stream.h"
-#include "../udrm.h"
 
 // constants
 const u_char common_system_id[] = {

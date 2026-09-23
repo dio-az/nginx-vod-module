@@ -1,8 +1,6 @@
 #include "webvtt_format.h"
-#include "../media_clip.h"
-#include "../media_set.h"
+#include <ctype.h> // IWYU pragma: keep
 #include "subtitle_format.h"
-#include <ctype.h>
 
 // macros
 #define webvtt_is_utf16le_bom(p) (p[0] == 0xFF && p[1] == 0xFE)

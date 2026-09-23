@@ -3,8 +3,6 @@
 
 // includes
 #include <ngx_http.h>
-#include "ngx_buffer_cache.h"
-#include "vod/mp4/mp4_parser.h"
 #include "vod/media_set.h"
 
 // constants

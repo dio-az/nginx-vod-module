@@ -3,8 +3,6 @@
 
 // includes
 #include <ngx_http.h>
-#include "ngx_http_vod_request_parse.h"
-#include "ngx_http_vod_conf.h"
 #include "vod/common.h"
 
 // functions

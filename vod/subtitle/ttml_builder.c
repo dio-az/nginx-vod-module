@@ -1,6 +1,7 @@
 #include "ttml_builder.h"
-#include "../mp4/mp4_fragment.h"
 #include "../mp4/mp4_defs.h"
+#include "../mp4/mp4_fragment.h"
+#include "../mp4/mp4_write_stream.h"
 
 // constants
 #define TTML_TIMESTAMP_FORMAT "%02uD:%02uD:%02uD.%03uD"

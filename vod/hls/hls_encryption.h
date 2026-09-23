@@ -2,8 +2,8 @@
 #define __HLS_ENCRYPTION_H__
 
 // includes
-#include "../common.h"
 #include "../aes_defs.h"
+#include "../common.h"
 
 // typedefs
 typedef enum {

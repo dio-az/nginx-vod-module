@@ -1,9 +1,9 @@
 #include "filter.h"
-#include "audio_filter.h"
-#include "rate_filter.h"
-#include "concat_clip.h"
 #include "../media_set.h"
 #include "../segmenter.h"
+#include "audio_filter.h"
+#include "concat_clip.h"
+#include "rate_filter.h"
 
 // typedefs
 typedef struct {

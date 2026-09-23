@@ -1,6 +1,6 @@
 #include "mix_filter.h"
-#include "audio_filter.h"
 #include "../media_set_parser.h"
+#include "audio_filter.h"
 
 // macros
 #define MIX_FILTER_DESC_PATTERN "amix=inputs=%uD[%uD]"

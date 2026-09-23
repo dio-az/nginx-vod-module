@@ -1,9 +1,13 @@
 #include <ngx_http.h>
+#include "ngx_http_vod_conf.h"
+#include "ngx_http_vod_request_parse.h"
 #include "ngx_http_vod_submodule.h"
 #include "ngx_http_vod_utils.h"
-#include "vod/thumb/thumb_grabber.h"
+#include "vod/common.h"
 #include "vod/manifest_utils.h"
+#include "vod/media_format.h"
 #include "vod/parse_utils.h"
+#include "vod/thumb/thumb_grabber.h"
 
 #define THUMB_TIMESCALE (1000)
 

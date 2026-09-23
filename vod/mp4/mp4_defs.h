@@ -1,7 +1,7 @@
 #ifndef __MP4_DEFS_H__
 #define __MP4_DEFS_H__
 
-#include "../common.h"
+#include "../common.h" // IWYU pragma: keep
 
 // constants
 #define ATOM_HEADER_SIZE (8)

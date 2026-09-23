@@ -60,8 +60,16 @@ RemoveEmptyLinesInUnwrappedLines: true
 
 # Includes
 IncludeBlocks: Merge
-SortIncludes:
-  Enabled: false # Preserve existing order
+IncludeCategories:
+  # NGINX headers must precede libc: <ngx_config.h> sets _GNU_SOURCE and _FILE_OFFSET_BITS
+  - Regex: '^<ngx_(core|config)\.h>'
+    Priority: -2
+  - Regex: '^<ngx_'
+    Priority: -1
+  - Regex: '^<[[:alnum:]_]+\.h>'
+    Priority: 1
+  - Regex: '^<'
+    Priority: 2
 
 # Line Endings and File Format
 InsertNewlineAtEOF: true

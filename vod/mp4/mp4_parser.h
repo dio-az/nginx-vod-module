@@ -2,7 +2,7 @@
 #define __MP4_PARSER_H__
 
 // includes
-#include "mp4_parser_base.h"
+#include "../media_format.h"
 
 // functions
 vod_status_t mp4_parser_get_ftyp_atom_into(

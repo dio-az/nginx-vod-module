@@ -1,6 +1,6 @@
 #include "gain_filter.h"
-#include "audio_filter.h"
 #include "../media_set_parser.h"
+#include "audio_filter.h"
 
 // macros
 #define GAIN_FILTER_DESC_PATTERN "[%uD]volume=volume=%uD.%02uD[%uD]"

@@ -1,6 +1,6 @@
+#include <ngx_core.h>
 #include <inttypes.h>
 #include <stdio.h>
-#include <ngx_core.h>
 #include <vod/common.h>
 
 #if (NGX_HAVE_VARIADIC_MACROS)
