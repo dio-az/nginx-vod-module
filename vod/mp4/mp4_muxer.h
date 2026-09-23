@@ -6,7 +6,6 @@
 #include "../media_set.h"
 
 // typedefs
-struct mp4_muxer_state_s;
 typedef struct mp4_muxer_state_s mp4_muxer_state_t;
 
 // functions

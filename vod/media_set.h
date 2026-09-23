@@ -36,8 +36,6 @@ typedef enum {
 
 // typedefs
 struct segmenter_conf_s;
-struct audio_filter_s;
-struct media_sequence_s;
 typedef struct media_sequence_s media_sequence_t;
 
 typedef struct {

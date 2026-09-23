@@ -295,7 +295,6 @@ typedef struct {
 	void* context;
 } segment_writer_t;
 
-struct buffer_pool_s;
 typedef struct buffer_pool_s buffer_pool_t;
 
 typedef struct {

@@ -11,7 +11,6 @@
 #define VOD_GUID_LENGTH (sizeof("00000000-0000-0000-0000-000000000000") - 1)
 
 // typedef
-struct mp4_cenc_encrypt_video_state_s;
 typedef struct mp4_cenc_encrypt_video_state_s mp4_cenc_encrypt_video_state_t;
 
 typedef vod_status_t (*mp4_cenc_encrypt_video_build_fragment_header_t)(

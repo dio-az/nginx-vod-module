@@ -10,7 +10,6 @@
 #define HLS_TIMESCALE (90000)
 
 // typedefs
-struct id3_context_s;
 typedef struct id3_context_s id3_context_t;
 
 typedef void (*hls_get_iframe_positions_callback_t)(
