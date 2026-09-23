@@ -1684,6 +1684,21 @@ ngx_http_vod_init_parse_params_frames(
 
 		ctx->submodule_context.media_set.initial_segment_clip_relative_index =
 			clip_ranges.clip_relative_segment_index;
+	} else if (ctx->submodule_context.request_params.segment_time == INVALID_SEGMENT_TIME) {
+		// neither a segment index nor a segment time: read this source's whole clip window with real
+		// frames (progressive multi-clip download - one full clip window per source, concatenated).
+		// This is the SEGMENT-class equivalent of the manifest/OTHER whole-clip range above, but not a
+		// simulation, so the frame bytes are actually read.
+		range->timescale = 1000;
+		range->original_clip_time = 0;
+		range->start = 0;
+		if (cur_source->clip_to == ULLONG_MAX) {
+			range->end = ULLONG_MAX;
+		} else {
+			range->end = cur_source->clip_to - cur_source->clip_from;
+		}
+		parse_params->range = range;
+		return NGX_OK;
 	} else {
 		// thumbnail request
 		get_ranges_params.time = ctx->submodule_context.request_params.segment_time;
@@ -5470,9 +5485,16 @@ ngx_http_vod_map_media_set_apply(ngx_http_vod_ctx_t* ctx, ngx_str_t* mapping, in
 
 	// progressive download (request == NULL) may map to several clips that we concatenate into one
 	// non-fragmented MP4 - parse all of them so the whole set is materialized. Single-clip mappings
-	// are unaffected (total_count stays 1).
+	// are unaffected (total_count stays 1). The progressive URL parser leaves segment_index /
+	// segment_time / clip_index at 0 (unlike the submodule parser, which sets the INVALID sentinels),
+	// so media_set_parse_json treats the request as "segment 0" / "clip 0" and materializes a single
+	// clip, defeating PARSE_ALL_CLIPS. Reset all three to their INVALID sentinels so the whole set is
+	// parsed.
 	if (ctx->request == NULL) {
 		request_flags |= REQUEST_FLAG_PARSE_ALL_CLIPS;
+		ctx->submodule_context.request_params.segment_index = INVALID_SEGMENT_INDEX;
+		ctx->submodule_context.request_params.segment_time = INVALID_SEGMENT_TIME;
+		ctx->submodule_context.request_params.clip_index = INVALID_CLIP_INDEX;
 	}
 
 	if (conf->force_continuous_timestamps) {
