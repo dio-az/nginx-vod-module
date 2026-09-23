@@ -3,9 +3,10 @@
 
 // includes
 #include <ngx_http.h>
-#include "ngx_http_vod_submodule.h"
+#include "ngx_buffer_cache.h"
 #include "ngx_http_vod_dash_conf.h"
 #include "ngx_http_vod_hls_conf.h"
+#include "ngx_http_vod_submodule.h"
 #include "vod/segmenter.h"
 
 #if (NGX_HAVE_LIB_AV_CODEC)
@@ -30,8 +31,6 @@ enum {
 };
 
 // typedefs
-struct ngx_http_vod_request_params_s;
-
 struct ngx_http_vod_loc_conf_s {
 	// config fields
 	ngx_http_vod_submodule_t submodule;

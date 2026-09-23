@@ -1,9 +1,9 @@
 #include "mkv_format.h"
-#include "mkv_defs.h"
-#include "ebml.h"
 #include "../input/frames_source_memory.h"
 #include "../read_stream.h"
 #include "../segmenter.h"
+#include "ebml.h"
+#include "mkv_defs.h"
 
 // constants
 #define BITRATE_ESTIMATE_SEC (5)

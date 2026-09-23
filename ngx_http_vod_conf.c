@@ -1,14 +1,16 @@
 #include "ngx_http_vod_conf.h"
-#include "ngx_http_vod_request_parse.h"
-#include "ngx_child_http_request.h"
-#include "ngx_http_vod_submodule.h"
-#include "ngx_http_vod_module.h"
-#include "ngx_http_vod_status.h"
-#include "ngx_perf_counters.h"
 #include "ngx_buffer_cache.h"
-#include "vod/media_set_parser.h"
+#include "ngx_child_http_request.h"
+#include "ngx_http_vod_module.h"
+#include "ngx_http_vod_request_parse.h"
+#include "ngx_http_vod_status.h"
+#include "ngx_http_vod_submodule.h"
+#include "ngx_perf_counters.h"
 #include "vod/buffer_pool.h"
 #include "vod/common.h"
+#include "vod/media_format.h"
+#include "vod/media_set_parser.h"
+#include "vod/segmenter.h"
 #include "vod/udrm.h"
 
 #if (NGX_HAVE_LIB_AV_CODEC)
@@ -52,7 +54,7 @@ ngx_http_vod_create_loc_conf(ngx_conf_t* cf) {
 	conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_vod_loc_conf_t));
 	if (conf == NULL) {
 		ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cf->log, 0, "ngx_http_vod_create_loc_conf: ngx_pcalloc failed");
-		return NGX_CONF_ERROR;
+		return NULL;
 	}
 
 	// base params
@@ -375,8 +377,9 @@ ngx_http_vod_merge_loc_conf(ngx_conf_t* cf, void* parent, void* child) {
 		return NGX_CONF_ERROR;
 	}
 
-	ngx_strlow(conf->proxy_header.lowcase_key, conf->proxy_header.key.data, conf->proxy_header.key.len);
-	conf->proxy_header.hash = ngx_hash_key(conf->proxy_header.lowcase_key, conf->proxy_header.key.len);
+	conf->proxy_header.hash = ngx_hash_strlow(
+		conf->proxy_header.lowcase_key, conf->proxy_header.key.data, conf->proxy_header.key.len
+	);
 
 	// init the hash table of the uri params (clipTo, clipFrom etc.)
 	rc = ngx_http_vod_init_uri_params_hash(cf, conf);

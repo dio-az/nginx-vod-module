@@ -1,13 +1,12 @@
 #include "thumb_grabber.h"
-#include "../media_set.h"
-
 #include <libavcodec/avcodec.h>
+#include "../media_set.h"
 
 #if (VOD_HAVE_LIB_SW_SCALE)
 #include <math.h>
-#include <libswscale/swscale.h>
 #include <libavutil/imgutils.h>
 #include <libavutil/opt.h>
+#include <libswscale/swscale.h>
 #endif // VOD_HAVE_LIB_SW_SCALE
 
 #define vod_abs_diff(val1, val2) ((val2) > (val1) ? (val2) - (val1) : (val1) - (val2))

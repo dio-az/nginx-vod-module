@@ -1,9 +1,6 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <ngx_http.h>
-#include <nginx.h>
-#include <ngx_event.h>
-
 #include "ngx_child_http_request.h"
 #include "ngx_http_vod_module.h"
 
@@ -42,7 +39,7 @@ typedef struct {
 } ngx_child_request_hide_header_t;
 
 // constants
-static ngx_str_t ngx_http_vod_head_method = {4, (u_char*)"HEAD "};
+static ngx_str_t ngx_http_vod_head_method = ngx_string("HEAD ");
 
 static ngx_str_t range_key = ngx_string("Range");
 static u_char* range_lowcase_key = (u_char*)"range";
@@ -393,12 +390,17 @@ ngx_child_request_copy_headers(
 		// add the header to the output list
 		*output = *ch;
 
+		output->next = NULL;
+
 		// update the header pointer, if exists
 		hh = ngx_hash_find(&cmcf->headers_in_hash, ch->hash, ch->lowcase_key, ch->key.len);
 		if (hh && hh->offset != 0) {
 			ph = (ngx_table_elt_t**)((char*)dest + hh->offset);
 
-			output->next = *ph;
+			while (*ph) {
+				ph = &(*ph)->next;
+			}
+
 			*ph = output;
 		}
 
@@ -407,7 +409,9 @@ ngx_child_request_copy_headers(
 
 	// add the extra header if needed
 	if (params->extra_header.key.len != 0) {
-		*output++ = params->extra_header;
+		*output = params->extra_header;
+		output->next = NULL;
+		output++;
 	}
 
 	// set the range if needed
@@ -588,6 +592,9 @@ ngx_child_request_header_filter(ngx_http_request_t* r) {
 		pr->headers_out = r->headers_out;
 		if (r->headers_out.headers.last == &r->headers_out.headers.part) {
 			pr->headers_out.headers.last = &pr->headers_out.headers.part;
+		}
+		if (r->headers_out.trailers.last == &r->headers_out.trailers.part) {
+			pr->headers_out.trailers.last = &pr->headers_out.trailers.part;
 		}
 		ctx->send_header_result = ngx_http_send_header(pr);
 	} else {

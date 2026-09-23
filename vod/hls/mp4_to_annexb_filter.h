@@ -2,9 +2,9 @@
 #define __MP4_TO_ANNEXB_FILTER_H__
 
 // includes
+#include "../media_format.h"
 #include "hls_encryption.h"
 #include "media_filter.h"
-#include "../media_format.h"
 
 // functions
 vod_status_t mp4_to_annexb_init(

@@ -2,8 +2,8 @@
 #define __FRAME_ENCRYPT_FILTER_H__
 
 // include
-#include "media_filter.h"
 #include "hls_encryption.h"
+#include "media_filter.h"
 
 // functions
 vod_status_t frame_encrypt_filter_init(

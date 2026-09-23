@@ -1,18 +1,23 @@
 #include <ngx_http.h>
 #include <ngx_md5.h>
+#include "ngx_http_vod_conf.h"
+#include "ngx_http_vod_request_parse.h"
 #include "ngx_http_vod_submodule.h"
 #include "ngx_http_vod_utils.h"
+#include "vod/common.h"
 #include "vod/dash/dash_packager.h"
+#include "vod/media_format.h"
 #include "vod/mkv/mkv_builder.h"
+#include "vod/mp4/mp4_defs.h"
 #include "vod/mp4/mp4_fragment.h"
 #include "vod/mp4/mp4_init_segment.h"
-#include "vod/subtitle/webvtt_builder.h"
 #include "vod/subtitle/ttml_builder.h"
+#include "vod/subtitle/webvtt_builder.h"
 #include "vod/udrm.h"
 
 #if (NGX_HAVE_OPENSSL_EVP)
-#include "vod/mp4/mp4_pssh.h"
 #include "vod/dash/edash_packager.h"
+#include "vod/mp4/mp4_pssh.h"
 #endif // NGX_HAVE_OPENSSL_EVP
 
 // constants
@@ -43,12 +48,6 @@ ngx_conf_enum_t dash_subtitle_formats[] = {
 	{ngx_null_string, 0},
 };
 
-// content types
-static u_char mpd_content_type[] = "application/dash+xml";
-static u_char webm_audio_content_type[] = "audio/webm";
-static u_char webm_video_content_type[] = "video/webm";
-static u_char vtt_content_type[] = "text/vtt";
-
 // file extensions
 static const u_char manifest_file_ext[] = ".mpd";
 static const u_char init_segment_file_ext[] = ".mp4";
@@ -69,8 +68,7 @@ ngx_http_vod_dash_handle_manifest(
 
 	if (conf->dash.absolute_manifest_urls) {
 		if (conf->dash.mpd_config.manifest_format == FORMAT_SEGMENT_LIST) {
-			file_uri.data = NULL;
-			file_uri.len = 0;
+			ngx_str_null(&file_uri);
 		} else {
 			file_uri = submodule_context->r->uri;
 		}
@@ -94,7 +92,7 @@ ngx_http_vod_dash_handle_manifest(
 	} else
 #endif // NGX_HAVE_OPENSSL_EVP
 	{
-		vod_memzero(&extensions, sizeof(extensions));
+		ngx_memzero(&extensions, sizeof(extensions));
 
 		rc = dash_packager_build_mpd(
 			&submodule_context->request_context,
@@ -117,8 +115,7 @@ ngx_http_vod_dash_handle_manifest(
 		return ngx_http_vod_status_to_ngx_error(submodule_context->r, rc);
 	}
 
-	content_type->data = mpd_content_type;
-	content_type->len = sizeof(mpd_content_type) - 1;
+	ngx_str_set(content_type, "application/dash+xml");
 	return NGX_OK;
 }
 
@@ -306,11 +303,9 @@ ngx_http_vod_dash_mp4_init_frame_processor(
 static void
 ngx_http_vod_dash_get_webm_content_type(bool_t video, ngx_str_t* content_type) {
 	if (video) {
-		content_type->data = webm_video_content_type;
-		content_type->len = sizeof(webm_video_content_type) - 1;
+		ngx_str_set(content_type, "video/webm");
 	} else {
-		content_type->data = webm_audio_content_type;
-		content_type->len = sizeof(webm_audio_content_type) - 1;
+		ngx_str_set(content_type, "audio/webm");
 	}
 }
 
@@ -433,8 +428,7 @@ ngx_http_vod_dash_handle_vtt_file(
 		return ngx_http_vod_status_to_ngx_error(submodule_context->r, rc);
 	}
 
-	content_type->len = sizeof(vtt_content_type) - 1;
-	content_type->data = (u_char*)vtt_content_type;
+	ngx_str_set(content_type, "text/vtt");
 	return NGX_OK;
 }
 

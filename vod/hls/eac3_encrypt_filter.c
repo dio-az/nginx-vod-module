@@ -1,6 +1,6 @@
 #include "eac3_encrypt_filter.h"
-#include "frame_encrypt_filter.h"
 #include "../read_stream.h"
+#include "frame_encrypt_filter.h"
 
 // macros
 #define THIS_FILTER (MEDIA_FILTER_EAC3_ENCRYPT)

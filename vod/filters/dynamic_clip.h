@@ -6,7 +6,6 @@
 #include "../media_set.h"
 
 // typedefs
-struct media_clip_dynamic_s;
 typedef struct media_clip_dynamic_s media_clip_dynamic_t;
 
 // typedefs

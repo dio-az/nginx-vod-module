@@ -1,14 +1,9 @@
 #include "mp4_cbcs_encrypt.h"
-#include "mp4_write_stream.h"
-#include "mp4_defs.h"
-#include "../write_buffer.h"
-#include "../read_stream.h"
-#include "../avc_hevc_parser.h"
-#include "../hevc_parser.h"
-#include "../avc_parser.h"
-#include "../avc_defs.h"
 #include "../aes_defs.h"
-#include "../udrm.h"
+#include "../avc_hevc_parser.h"
+#include "../avc_parser.h"
+#include "../hevc_parser.h"
+#include "../write_buffer.h"
 
 // constants
 #define MIN_ENCRYPTED_PACKET_SIZE (1 + AES_BLOCK_SIZE) // minimum 1 byte for slice header

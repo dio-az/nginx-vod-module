@@ -1,8 +1,5 @@
 #include "../media_format.h"
-#include "../media_clip.h"
-#include "../media_set.h"
 #include "subtitle_format.h"
-#include <ctype.h>
 
 // macros
 #define cap_is_style(ch) ((ch) < 0x20 || (ch) >= 0xC0)
@@ -250,8 +247,7 @@ cap_parse_frames(
 	result->track_count[MEDIA_TYPE_SUBTITLE] = 1;
 	result->total_track_count = 1;
 
-	header->len = sizeof(WEBVTT_HEADER_NEWLINES) - 1;
-	header->data = (u_char*)WEBVTT_HEADER_NEWLINES;
+	vod_str_set(header, WEBVTT_HEADER_NEWLINES);
 
 	if ((parse_params->parse_type & PARSE_FLAG_FRAMES_ALL) == 0) {
 		return VOD_OK;

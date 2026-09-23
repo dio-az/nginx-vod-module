@@ -90,7 +90,8 @@ ngx_http_vod_send_response(ngx_http_request_t* r, ngx_str_t* response, ngx_str_t
 	if (response->len > 0) {
 		b->temporary = 1;
 	}
-	b->last_buf = 1; // this is the last buffer in the buffer chain
+	b->last_buf = (r == r->main) ? 1 : 0;
+	b->last_in_chain = 1;
 
 	// attach the buffer to the chain
 	out.buf = b;
@@ -160,18 +161,6 @@ ngx_http_vod_header_exists(ngx_http_request_t* r, ngx_str_t* searched_header) {
 	return 0;
 }
 
-static void*
-ngx_http_vod_memrchr(const u_char* s, int c, size_t n) {
-	const u_char* cp;
-
-	for (cp = s + n; cp > s;) {
-		if (*(--cp) == (u_char)c) {
-			return (void*)cp;
-		}
-	}
-	return NULL;
-}
-
 ngx_int_t
 ngx_http_vod_get_base_url(
 	ngx_http_request_t* r, ngx_http_complex_value_t* conf_base_url, ngx_str_t* file_uri, ngx_str_t* result
@@ -211,10 +200,10 @@ ngx_http_vod_get_base_url(
 	}
 
 	if (file_uri->len) {
-		last_slash = ngx_http_vod_memrchr(file_uri->data, '/', file_uri->len);
+		last_slash = ngx_strrchr(file_uri->data, file_uri->data + file_uri->len, '/');
 		if (last_slash == NULL) {
-			vod_log_error(
-				VOD_LOG_ERR, r->connection->log, 0, "ngx_http_vod_get_base_url: no slash found in uri %V", file_uri
+			ngx_log_error(
+				NGX_LOG_ERR, r->connection->log, 0, "ngx_http_vod_get_base_url: no slash found in uri %V", file_uri
 			);
 			return NGX_ERROR;
 		}
@@ -238,7 +227,7 @@ ngx_http_vod_get_base_url(
 	result->data = p;
 
 	if (conf_base_url != NULL) {
-		p = vod_copy(p, base_url.data, base_url.len);
+		p = ngx_copy(p, base_url.data, base_url.len);
 	} else {
 #if (NGX_HTTP_SSL)
 		use_https = (r->connection->ssl != NULL);
@@ -261,8 +250,8 @@ ngx_http_vod_get_base_url(
 	result->len = p - result->data;
 
 	if (result->len > result_size) {
-		vod_log_error(
-			VOD_LOG_ERR,
+		ngx_log_error(
+			NGX_LOG_ERR,
 			r->connection->log,
 			0,
 			"ngx_http_vod_get_base_url: result length %uz exceeded allocated length %uz",

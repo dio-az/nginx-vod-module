@@ -2,6 +2,8 @@
 #include "../manifest_utils.h"
 #include "../mp4/mp4_defs.h"
 #include "../mp4/mp4_fragment.h"
+#include "../mp4/mp4_write_stream.h"
+#include "../write_stream.h"
 
 // macros
 #define dash_rescale_millis(millis) ((millis) * (DASH_TIMESCALE / 1000))
@@ -510,8 +512,7 @@ dash_packager_get_segment_list_base_url(
 	u_char* base_url_temp_buffer = context->base_url_temp_buffer;
 
 	if (base_url->len == 0) {
-		result->data = NULL;
-		result->len = 0;
+		vod_str_null(result);
 		return;
 	}
 
@@ -1221,12 +1222,8 @@ dash_packager_build_mpd(
 	// get the base url
 	if (base_url->len != 0) {
 		result_size += (sizeof(mpd_baseurl) - 1) + base_url->len;
-		context.base_url.data = NULL;
-		context.base_url.len = 0;
-	} else {
-		context.base_url.data = NULL;
-		context.base_url.len = 0;
 	}
+	vod_str_null(&context.base_url);
 
 	// calculate the total size
 	urls_length = 2 * context.base_url.len

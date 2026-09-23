@@ -1,8 +1,8 @@
 #include "mp4_cenc_passthrough.h"
-#include "mp4_cenc_decrypt.h"
-#include "mp4_cenc_encrypt.h"
-#include "mp4_write_stream.h"
 #include "../udrm.h"
+#include "mp4_cenc_decrypt.h"
+#include "mp4_defs.h"
+#include "mp4_write_stream.h"
 
 bool_t
 mp4_cenc_passthrough_init(mp4_cenc_passthrough_context_t* context, media_sequence_t* sequence) {

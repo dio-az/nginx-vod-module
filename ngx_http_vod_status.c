@@ -1,10 +1,11 @@
 // includes
 #include "ngx_http_vod_status.h"
+#include "ngx_buffer_cache.h"
+#include "ngx_http_vod_conf.h"
 #include "ngx_http_vod_module.h"
 #include "ngx_http_vod_utils.h"
-#include "ngx_http_vod_conf.h"
 #include "ngx_perf_counters.h"
-#include "ngx_buffer_cache.h"
+#include "vod/common.h"
 
 // macros
 #define DEFINE_STAT(x) {{sizeof(#x) - 1, (u_char*)#x}, offsetof(ngx_buffer_cache_stats_t, x)}

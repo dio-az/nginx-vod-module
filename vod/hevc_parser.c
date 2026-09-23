@@ -1,7 +1,7 @@
-#include "avc_hevc_parser.h"
-#include "codec_config.h"
 #include "hevc_parser.h"
 #include "avc_defs.h"
+#include "avc_hevc_parser.h"
+#include "codec_config.h"
 
 // constants
 #define HEVC_NAL_HEADER_SIZE (2)
@@ -439,7 +439,7 @@ hevc_parser_skip_st_ref_pic_set(
 		k = 0;
 
 		for (i = 0; i <= rps_ridx->num_delta_pocs && !reader->stream.eof_reached; i++) {
-			int used = rps->used[k] = bit_read_stream_get_one(reader);
+			used = rps->used[k] = bit_read_stream_get_one(reader);
 
 			if (!used) {
 				use_delta_flag = bit_read_stream_get_one(reader);

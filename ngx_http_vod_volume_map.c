@@ -1,12 +1,15 @@
 #include <ngx_http.h>
+#include "ngx_http_vod_conf.h"
+#include "ngx_http_vod_request_parse.h"
 #include "ngx_http_vod_submodule.h"
 #include "ngx_http_vod_utils.h"
+#include "vod/common.h"
 #include "vod/filters/volume_map.h"
+#include "vod/media_format.h"
 
 #define VOLUME_MAP_TIMESCALE (1000)
 
 static const u_char csv_file_ext[] = ".csv";
-static u_char csv_content_type[] = "text/csv";
 static ngx_str_t csv_header = ngx_string("pts,rms_level\n");
 
 static ngx_int_t
@@ -43,8 +46,7 @@ ngx_http_vod_volume_map_init_frame_processor(
 	*frame_processor = (ngx_http_vod_frame_processor_t)volume_map_writer_process;
 
 	*output_buffer = csv_header;
-	content_type->len = sizeof(csv_content_type) - 1;
-	content_type->data = (u_char*)csv_content_type;
+	ngx_str_set(content_type, "text/csv");
 
 	return NGX_OK;
 }

@@ -1,8 +1,6 @@
-#include "../media_format.h"
-#include "../media_clip.h"
-#include "../media_set.h"
+#include "webvtt_format.h"
+#include <ctype.h> // IWYU pragma: keep
 #include "subtitle_format.h"
-#include <ctype.h>
 
 // macros
 #define webvtt_is_utf16le_bom(p) (p[0] == 0xFF && p[1] == 0xFE)
@@ -60,7 +58,7 @@ webvtt_init_process(vod_log_t* log) {
 }
 
 void
-webvtt_exit_process() {
+webvtt_exit_process(void) {
 	if (iconv_utf16le_to_utf8 != ICONV_INVALID_DESC) {
 		iconv_close(iconv_utf16le_to_utf8);
 		iconv_utf16le_to_utf8 = ICONV_INVALID_DESC;
@@ -505,8 +503,7 @@ webvtt_parse_frames(
 			return VOD_ALLOC_FAILED;
 		}
 	} else {
-		header->len = sizeof(WEBVTT_HEADER_NEWLINES) - 1;
-		header->data = (u_char*)WEBVTT_HEADER_NEWLINES;
+		vod_str_set(header, WEBVTT_HEADER_NEWLINES);
 	}
 
 	if ((parse_params->parse_type & PARSE_FLAG_FRAMES_ALL) == 0) {

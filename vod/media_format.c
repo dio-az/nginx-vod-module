@@ -125,11 +125,10 @@ media_format_finalize_track(request_context_t* request_context, int parse_type, 
 			vod_memzero(new_extra_data + media_info->extra_data.len, VOD_BUFFER_PADDING_SIZE);
 			media_info->extra_data.data = new_extra_data;
 		} else {
-			media_info->extra_data.data = NULL;
+			vod_str_null(&media_info->extra_data);
 		}
 	} else {
-		media_info->extra_data.data = NULL;
-		media_info->extra_data.len = 0;
+		vod_str_null(&media_info->extra_data);
 	}
 
 	return VOD_OK;
