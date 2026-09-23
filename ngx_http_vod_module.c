@@ -5484,17 +5484,11 @@ ngx_http_vod_map_media_set_apply(ngx_http_vod_ctx_t* ctx, ngx_str_t* mapping, in
 	request_flags = ctx->request != NULL ? ctx->request->flags : 0;
 
 	// progressive download (request == NULL) may map to several clips that we concatenate into one
-	// non-fragmented MP4 - parse all of them so the whole set is materialized. Single-clip mappings
-	// are unaffected (total_count stays 1). The progressive URL parser leaves segment_index /
-	// segment_time / clip_index at 0 (unlike the submodule parser, which sets the INVALID sentinels),
-	// so media_set_parse_json treats the request as "segment 0" / "clip 0" and materializes a single
-	// clip, defeating PARSE_ALL_CLIPS. Reset all three to their INVALID sentinels so the whole set is
-	// parsed.
+	// non-fragmented MP4 - parse all of them so the whole set is materialized. There is no request
+	// object yet to carry the flag (it is chosen below, after the media set is known), so pass it
+	// explicitly. Single-clip mappings are unaffected (total_count stays 1).
 	if (ctx->request == NULL) {
 		request_flags |= REQUEST_FLAG_PARSE_ALL_CLIPS;
-		ctx->submodule_context.request_params.segment_index = INVALID_SEGMENT_INDEX;
-		ctx->submodule_context.request_params.segment_time = INVALID_SEGMENT_TIME;
-		ctx->submodule_context.request_params.clip_index = INVALID_CLIP_INDEX;
 	}
 
 	if (conf->force_continuous_timestamps) {
@@ -5904,6 +5898,13 @@ ngx_http_vod_handler(ngx_http_request_t* r) {
 		}
 	} else {
 		request = NULL;
+		// progressive download has no submodule file-name parser to set these, so initialize the
+		// "not a segment / not a thumbnail / not a specific clip" sentinels here, mirroring
+		// ngx_http_vod_parse_uri for submodule requests. parse_uri_path still overrides them if the
+		// url carries the corresponding params.
+		request_params.segment_index = INVALID_SEGMENT_INDEX;
+		request_params.segment_time = INVALID_SEGMENT_TIME;
+		request_params.clip_index = INVALID_CLIP_INDEX;
 		request_params.sequences_mask = 1;
 		vod_track_mask_set_all_bits(request_params.tracks_mask[MEDIA_TYPE_VIDEO]);
 		vod_track_mask_set_all_bits(request_params.tracks_mask[MEDIA_TYPE_AUDIO]);
