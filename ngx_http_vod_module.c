@@ -5309,7 +5309,11 @@ ngx_http_vod_progressive_init_frame_processor(
 // single byte-range dump. init_frame_processor above turns the filtered tracks into one MP4.
 static const ngx_http_vod_request_t progressive_download_request = {
 	REQUEST_FLAG_SINGLE_TRACK_PER_MEDIA_TYPE | REQUEST_FLAG_PARSE_ALL_CLIPS,
-	PARSE_FLAG_FRAMES_ALL | PARSE_FLAG_INITIAL_PTS_DELAY | PARSE_FLAG_PARSED_EXTRA_DATA,
+	// SAVE_RAW_ATOMS is required: this response builds the moov itself and passes no stsd writer, so
+	// mp4_init_segment reads each track's raw stsd atom (codec config) from raw_atoms[RTA_STSD]. Without
+	// it that atom is unpopulated and its garbage size blows up the moov allocation. FRAMES_ALL gives the
+	// mdat frames; INITIAL_PTS_DELAY the ctts base.
+	PARSE_FLAG_FRAMES_ALL | PARSE_FLAG_INITIAL_PTS_DELAY | PARSE_FLAG_SAVE_RAW_ATOMS,
 	REQUEST_CLASS_SEGMENT,
 	PROGRESSIVE_DOWNLOAD_SUPPORTED_CODECS,
 	PROGRESSIVE_DOWNLOAD_TIMESCALE,
