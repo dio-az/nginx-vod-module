@@ -75,7 +75,6 @@ enum {
 };
 
 // typedefs
-struct ngx_http_vod_ctx_s;
 typedef struct ngx_http_vod_ctx_s ngx_http_vod_ctx_t;
 
 typedef ngx_int_t (*ngx_http_vod_state_machine_t)(ngx_http_vod_ctx_t* ctx);

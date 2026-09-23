@@ -32,7 +32,6 @@
 	 && ngx_memcmp((start_pos), (prefix)->data, (prefix)->len) == 0)
 
 // typedefs
-struct ngx_http_vod_request_s;
 struct ngx_http_vod_loc_conf_s;
 
 enum {

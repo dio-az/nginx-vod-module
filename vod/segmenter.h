@@ -19,7 +19,6 @@ enum {
 };
 
 // typedefs
-struct segmenter_conf_s;
 typedef struct segmenter_conf_s segmenter_conf_t;
 
 typedef struct {

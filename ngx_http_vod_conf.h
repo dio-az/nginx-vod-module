@@ -31,8 +31,6 @@ enum {
 };
 
 // typedefs
-struct ngx_http_vod_request_params_s;
-
 struct ngx_http_vod_loc_conf_s {
 	// config fields
 	ngx_http_vod_submodule_t submodule;
