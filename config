@@ -308,6 +308,7 @@ VOD_DEPS="$VOD_DEPS                                           \
           $ngx_addon_dir/vod/mp4/mp4_format.h                 \
           $ngx_addon_dir/vod/mp4/mp4_fragment.h               \
           $ngx_addon_dir/vod/mp4/mp4_init_segment.h           \
+          $ngx_addon_dir/vod/mp4/mp4_progressive_builder.h    \
           $ngx_addon_dir/vod/mp4/mp4_parser.h                 \
           $ngx_addon_dir/vod/mp4/mp4_parser_base.h            \
           $ngx_addon_dir/vod/mp4/mp4_write_stream.h           \
@@ -382,6 +383,7 @@ VOD_SRCS="$VOD_SRCS                                           \
           $ngx_addon_dir/vod/mp4/mp4_format.c                 \
           $ngx_addon_dir/vod/mp4/mp4_fragment.c               \
           $ngx_addon_dir/vod/mp4/mp4_init_segment.c           \
+          $ngx_addon_dir/vod/mp4/mp4_progressive_builder.c    \
           $ngx_addon_dir/vod/mp4/mp4_parser.c                 \
           $ngx_addon_dir/vod/mp4/mp4_parser_base.c            \
           $ngx_addon_dir/vod/subtitle/cap_format.c            \
