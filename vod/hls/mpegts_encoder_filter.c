@@ -1,6 +1,6 @@
 #include "mpegts_encoder_filter.h"
-#include "bit_fields.h"
 #include "../common.h"
+#include "bit_fields.h"
 
 #define THIS_FILTER (MEDIA_FILTER_MPEGTS)
 

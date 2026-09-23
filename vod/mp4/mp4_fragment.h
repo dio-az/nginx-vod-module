@@ -2,8 +2,6 @@
 #define __MP4_FRAGMENT_H__
 
 // includes
-#include "mp4_write_stream.h"
-#include "mp4_defs.h"
 #include "../media_set.h"
 
 // constants

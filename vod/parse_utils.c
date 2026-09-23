@@ -1,5 +1,5 @@
-#include "media_format.h"
 #include "parse_utils.h"
+#include "media_format.h"
 
 static vod_inline int
 parse_utils_get_hex_nibble(u_char ch) {

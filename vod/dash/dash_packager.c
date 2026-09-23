@@ -2,6 +2,8 @@
 #include "../manifest_utils.h"
 #include "../mp4/mp4_defs.h"
 #include "../mp4/mp4_fragment.h"
+#include "../mp4/mp4_write_stream.h"
+#include "../write_stream.h"
 
 // macros
 #define dash_rescale_millis(millis) ((millis) * (DASH_TIMESCALE / 1000))

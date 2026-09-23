@@ -2,8 +2,8 @@
 #define __SEGMENTER_H__
 
 // includes
-#include "media_set.h"
 #include "common.h"
+#include "media_set.h"
 
 // constants
 #define INVALID_SEGMENT_COUNT UINT_MAX

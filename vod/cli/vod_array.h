@@ -1,6 +1,8 @@
 #ifndef __VOD_ARRAY_H__
 #define __VOD_ARRAY_H__
 
+#include <stddef.h>
+
 #define vod_array_init(array, pool, n, size) vod_array_init_impl(array, n, size)
 
 typedef struct {

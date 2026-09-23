@@ -1,6 +1,6 @@
+#include "mkv_defs.h"
 #include "../media_format.h"
 #include "../mp4/mp4_defs.h"
-#include "mkv_defs.h"
 
 // constants
 mkv_codec_type_t mkv_codec_types[] = {

@@ -3,7 +3,6 @@
 
 // includes
 #include "dash_packager.h"
-#include "../udrm.h"
 
 // functions
 vod_status_t edash_packager_build_mpd(

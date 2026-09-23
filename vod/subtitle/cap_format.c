@@ -1,8 +1,5 @@
 #include "../media_format.h"
-#include "../media_clip.h"
-#include "../media_set.h"
 #include "subtitle_format.h"
-#include <ctype.h>
 
 // macros
 #define cap_is_style(ch) ((ch) < 0x20 || (ch) >= 0xC0)

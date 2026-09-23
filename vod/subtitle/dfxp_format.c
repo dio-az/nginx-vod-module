@@ -1,10 +1,7 @@
 #include "dfxp_format.h"
-#include "../media_clip.h"
-#include "../media_set.h"
-#include "subtitle_format.h"
-
+#include <ctype.h>
 #include <libxml/parser.h>
-#include <libxml/tree.h>
+#include "subtitle_format.h"
 
 #define DFXP_PREFIX "<tt"
 #define DFXP_XML_PREFIX1 "<?xml"

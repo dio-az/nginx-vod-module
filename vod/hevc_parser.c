@@ -1,7 +1,7 @@
-#include "avc_hevc_parser.h"
-#include "codec_config.h"
 #include "hevc_parser.h"
 #include "avc_defs.h"
+#include "avc_hevc_parser.h"
+#include "codec_config.h"
 
 // constants
 #define HEVC_NAL_HEADER_SIZE (2)

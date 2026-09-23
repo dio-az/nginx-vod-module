@@ -2,11 +2,9 @@
 #define __ADTS_ENCODER_FILTER_H__
 
 // includes
-#include "hls_encryption.h"
-#include "bit_fields.h"
-#include "media_filter.h"
-#include "../media_format.h"
 #include "../common.h"
+#include "../media_format.h"
+#include "media_filter.h"
 
 // functions
 vod_status_t adts_encoder_init(media_filter_t* filter, media_filter_context_t* context);

@@ -1,8 +1,10 @@
 #include "ngx_http_vod_request_parse.h"
-#include "ngx_http_vod_module.h"
 #include "ngx_http_vod_conf.h"
 #include "ngx_http_vod_utils.h"
+#include "vod/common.h"
 #include "vod/filters/rate_filter.h"
+#include "vod/language_code.h"
+#include "vod/media_format.h"
 #include "vod/parse_utils.h"
 
 // macros

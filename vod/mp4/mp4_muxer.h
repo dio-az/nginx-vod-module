@@ -2,9 +2,8 @@
 #define __MP4_MUXER_H__
 
 // includes
-#include "../media_format.h"
-#include "../media_set.h"
 #include "../common.h"
+#include "../media_set.h"
 
 // typedefs
 struct mp4_muxer_state_s;

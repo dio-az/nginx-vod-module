@@ -1,4 +1,5 @@
 #include "subtitle_format.h"
+#include "../language_code.h"
 #include "../media_set.h"
 
 // typedefs

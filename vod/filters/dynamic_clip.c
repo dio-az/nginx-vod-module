@@ -1,7 +1,7 @@
 #include "dynamic_clip.h"
-#include "concat_clip.h"
 #include "../media_set_parser.h"
 #include "../parse_utils.h"
+#include "concat_clip.h"
 
 // constants
 #define MAX_DYNAMIC_CLIP_SOURCE_COUNT (128)

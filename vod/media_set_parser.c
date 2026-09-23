@@ -1,17 +1,13 @@
 #include "media_set_parser.h"
-#include "json_parser.h"
-#include "segmenter.h"
-#include "filters/gain_filter.h"
-#include "filters/rate_filter.h"
-#include "filters/mix_filter.h"
 #include "filters/concat_clip.h"
 #include "filters/dynamic_clip.h"
+#include "filters/gain_filter.h"
+#include "filters/mix_filter.h"
+#include "filters/rate_filter.h"
 #include "input/silence_generator.h"
+#include "json_parser.h"
 #include "parse_utils.h"
-
-#if (VOD_HAVE_OPENSSL_EVP)
-#include "mp4/mp4_aes_ctr.h"
-#endif // VOD_HAVE_OPENSSL_EVP
+#include "segmenter.h"
 
 // macros
 #define HASH_TABLE(name) {#name "_hash", name##_params, sizeof(name##_params[0]), &name##_hash}

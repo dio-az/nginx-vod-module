@@ -2,12 +2,9 @@
 #define __HLS_MUXER_H__
 
 // includes
-#include "mp4_to_annexb_filter.h"
-#include "adts_encoder_filter.h"
-#include "mpegts_encoder_filter.h"
-#include "buffer_filter.h"
 #include "../media_format.h"
 #include "../segmenter.h"
+#include "mpegts_encoder_filter.h"
 
 // constants
 #define HLS_TIMESCALE (90000)

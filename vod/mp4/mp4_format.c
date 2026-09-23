@@ -1,6 +1,8 @@
 #include "mp4_format.h"
-#include "mp4_parser.h"
 #include "mp4_clipper.h"
+#include "mp4_defs.h"
+#include "mp4_parser.h"
+#include "mp4_parser_base.h"
 
 // constants
 

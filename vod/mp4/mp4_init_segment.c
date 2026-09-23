@@ -1,8 +1,8 @@
 #include "mp4_init_segment.h"
-#include "mp4_write_stream.h"
-#include "mp4_defs.h"
 #include "../read_stream.h"
 #include "../udrm.h"
+#include "mp4_defs.h"
+#include "mp4_write_stream.h"
 
 // macros
 #define mp4_rescale_millis(millis, timescale) (millis * ((timescale) / 1000))

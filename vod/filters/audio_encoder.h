@@ -2,8 +2,8 @@
 #define __AUDIO_ENCODER_H__
 
 // includes
+#include <libavcodec/avcodec.h> // IWYU pragma: keep
 #include "../media_format.h"
-#include <libavcodec/avcodec.h>
 
 // constants
 #define AUDIO_ENCODER_INPUT_SAMPLE_FORMAT (AV_SAMPLE_FMT_S16)

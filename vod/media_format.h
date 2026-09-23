@@ -2,10 +2,10 @@
 #define __MEDIA_FORMAT_H__
 
 // includes
+#include "codec_config.h"
 #include "input/frames_source.h"
 #include "input/read_cache.h"
 #include "language_code.h"
-#include "codec_config.h"
 
 // macros
 #define rescale_time(time, cur_scale, new_scale) \

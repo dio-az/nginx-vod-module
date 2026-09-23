@@ -1,21 +1,29 @@
 #include <ngx_http.h>
 #include <ngx_md5.h>
+#include "ngx_http_vod_conf.h"
+#include "ngx_http_vod_request_parse.h"
 #include "ngx_http_vod_submodule.h"
 #include "ngx_http_vod_utils.h"
+#include "vod/aes_defs.h"
+#include "vod/common.h"
+#include "vod/dash/dash_packager.h"
 #include "vod/hls/hls_encryption.h"
-#include "vod/media_format.h"
-#include "vod/subtitle/webvtt_builder.h"
 #include "vod/hls/hls_muxer.h"
-#include "vod/mp4/mp4_muxer.h"
+#include "vod/hls/m3u8_builder.h"
+#include "vod/media_format.h"
+#include "vod/media_set.h"
+#include "vod/mp4/mp4_defs.h"
 #include "vod/mp4/mp4_fragment.h"
 #include "vod/mp4/mp4_init_segment.h"
+#include "vod/mp4/mp4_muxer.h"
+#include "vod/subtitle/webvtt_builder.h"
 #include "vod/udrm.h"
 
 #if (NGX_HAVE_OPENSSL_EVP)
-#include "vod/mp4/mp4_pssh.h"
 #include "vod/dash/edash_packager.h"
-#include "vod/mp4/mp4_cbcs_encrypt.h"
 #include "vod/hls/aes_cbc_encrypt.h"
+#include "vod/mp4/mp4_cbcs_encrypt.h"
+#include "vod/mp4/mp4_pssh.h"
 #endif // NGX_HAVE_OPENSSL_EVP
 
 // constants
