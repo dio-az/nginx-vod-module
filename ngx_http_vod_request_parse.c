@@ -1018,6 +1018,7 @@ ngx_http_vod_parse_uri_path(
 		cur_sequence->tags.is_autoselect = 1;
 		cur_sequence->tags.is_default = -1;
 		ngx_memzero(&cur_sequence->tags.roles, sizeof(cur_sequence->tags.roles));
+		ngx_memzero(&cur_sequence->tags.accessibility, sizeof(cur_sequence->tags.accessibility));
 
 		cur_sequence->first_key_frame_offset = 0;
 		cur_sequence->key_frame_durations = NULL;

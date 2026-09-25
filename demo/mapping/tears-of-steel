@@ -84,7 +84,11 @@
         { "type": "source", "path": "tears-of-steel/tears-of-steel-aac-64k.mp4" }
       ],
       "language": "eng",
-      "roles": ["main"]
+      "roles": ["alternate"],
+      "accessibility": [
+        { "schemeIdUri": "urn:tva:metadata:cs:AudioPurposeCS:2007", "value": "1" }
+      ],
+      "characteristics": "public.accessibility.describes-video"
     },
     {
       "id": "aac_128k",
