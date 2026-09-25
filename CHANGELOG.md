@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.0](https://github.com/dio-az/nginx-vod-module/compare/v1.9.3...v1.10.0) (2026-09-25)
+
+**Config directives and runtime behavior remain unchanged.** This release updates build requirements to match modern distros like Ubuntu 24.04 LTS (NGINX 1.24, FFmpeg 6.1) and the CI test matrix.
+
+> [!IMPORTANT]
+> Building this module requires **NGINX v1.23.0+** and **FFmpeg v5.1+** (*v6.1+ recommended*). Older versions fail at build time. Use an active NGINX release (mainline or stable) for upstream security patches.
+
+### ⚠ BREAKING CHANGES
+
+- Drop support for NGINX below v1.23 ([#126](https://github.com/dio-az/nginx-vod-module/pull/126))
+- Drop support for FFmpeg below v5.1 ([#72](https://github.com/dio-az/nginx-vod-module/pull/72))
+
+### Features
+
+- Add support for DASH accessibility ([#158](https://github.com/dio-az/nginx-vod-module/pull/158))
+- Refactor codebase to follow modern NGINX conventions ([#153](https://github.com/dio-az/nginx-vod-module/pull/153))
+- Add HLS I-frame playlist support for fMP4 ([#151](https://github.com/dio-az/nginx-vod-module/pull/151))
+
+### Bug Fixes
+
+- Remove trailing space from HEAD method ([#156](https://github.com/dio-az/nginx-vod-module/pull/156))
+- Fix accurate manifest durations after keyframe-aligned clipping ([#149](https://github.com/dio-az/nginx-vod-module/pull/149))
+- Fix subrequest buffer allocation when using `proxy_cache` ([#150](https://github.com/dio-az/nginx-vod-module/pull/150))
+- Fix deprecation warning in thumbnail resizing ([#147](https://github.com/dio-az/nginx-vod-module/pull/147))
+
 ## [1.9.3](https://github.com/dio-az/nginx-vod-module/compare/v1.9.2...v1.9.3) (2026-09-14)
 
 ### Bug Fixes
