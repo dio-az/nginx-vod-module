@@ -5299,7 +5299,10 @@ ngx_http_vod_progressive_init_frame_processor(
 		media_set,
 		segment_writer->write_tail,
 		segment_writer->context,
-		FALSE, // reuse_buffers - coalesce contiguous reads, like the fragment writer default
+		// reuse_buffers: a progressive download streams the whole file, so recycle the read cache
+		// slots instead of pinning a fresh buffer per read in the request pool (which grows with the
+		// output size and OOMs the worker). nginx copies unsent temporary buffers, so reuse is safe.
+		TRUE,
 		&state
 	);
 	if (rc != VOD_OK) {
