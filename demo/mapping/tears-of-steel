@@ -4,120 +4,84 @@
     {
       "id": "avc_400k",
       "clips": [
-        {
-          "type": "source",
-          "path": "tears-of-steel/tears-of-steel-avc-400k.mp4"
-        }
+        { "type": "source", "path": "tears-of-steel/tears-of-steel-avc-400k.mp4" }
       ],
       "roles": ["main"]
     },
     {
       "id": "avc_600k",
       "clips": [
-        {
-          "type": "source",
-          "path": "tears-of-steel/tears-of-steel-avc-600k.mp4"
-        }
+        { "type": "source", "path": "tears-of-steel/tears-of-steel-avc-600k.mp4" }
       ],
       "roles": ["main"]
     },
     {
       "id": "avc_900k",
       "clips": [
-        {
-          "type": "source",
-          "path": "tears-of-steel/tears-of-steel-avc-900k.mp4"
-        }
+        { "type": "source", "path": "tears-of-steel/tears-of-steel-avc-900k.mp4" }
       ],
       "roles": ["main"]
     },
     {
       "id": "avc_1500k",
       "clips": [
-        {
-          "type": "source",
-          "path": "tears-of-steel/tears-of-steel-avc-1500k.mp4"
-        }
+        { "type": "source", "path": "tears-of-steel/tears-of-steel-avc-1500k.mp4" }
       ],
       "roles": ["main"]
     },
     {
       "id": "avc_3500k",
       "clips": [
-        {
-          "type": "source",
-          "path": "tears-of-steel/tears-of-steel-avc-3500k.mp4"
-        }
+        { "type": "source", "path": "tears-of-steel/tears-of-steel-avc-3500k.mp4" }
       ],
       "roles": ["main"]
     },
     {
       "id": "hevc_2450k",
       "clips": [
-        {
-          "type": "source",
-          "path": "tears-of-steel/tears-of-steel-hevc-2450k.mp4"
-        }
+        { "type": "source", "path": "tears-of-steel/tears-of-steel-hevc-2450k.mp4" }
       ],
       "roles": ["main"]
     },
     {
       "id": "hevc_3500k",
       "clips": [
-        {
-          "type": "source",
-          "path": "tears-of-steel/tears-of-steel-hevc-3500k.mp4"
-        }
+        { "type": "source", "path": "tears-of-steel/tears-of-steel-hevc-3500k.mp4" }
       ],
       "roles": ["main"]
     },
     {
       "id": "hevc_7000k",
       "clips": [
-        {
-          "type": "source",
-          "path": "tears-of-steel/tears-of-steel-hevc-7000k.mp4"
-        }
+        { "type": "source", "path": "tears-of-steel/tears-of-steel-hevc-7000k.mp4" }
       ],
       "roles": ["main"]
     },
     {
       "id": "av1_2100k",
       "clips": [
-        {
-          "type": "source",
-          "path": "tears-of-steel/tears-of-steel-av1-2100k.mp4"
-        }
+        { "type": "source", "path": "tears-of-steel/tears-of-steel-av1-2100k.mp4" }
       ],
       "roles": ["main"]
     },
     {
       "id": "av1_3000k",
       "clips": [
-        {
-          "type": "source",
-          "path": "tears-of-steel/tears-of-steel-av1-3000k.mp4"
-        }
+        { "type": "source", "path": "tears-of-steel/tears-of-steel-av1-3000k.mp4" }
       ],
       "roles": ["main"]
     },
     {
       "id": "av1_6000k",
       "clips": [
-        {
-          "type": "source",
-          "path": "tears-of-steel/tears-of-steel-av1-6000k.mp4"
-        }
+        { "type": "source", "path": "tears-of-steel/tears-of-steel-av1-6000k.mp4" }
       ],
       "roles": ["main"]
     },
     {
       "id": "aac_64k",
       "clips": [
-        {
-          "type": "source",
-          "path": "tears-of-steel/tears-of-steel-aac-64k.mp4"
-        }
+        { "type": "source", "path": "tears-of-steel/tears-of-steel-aac-64k.mp4" }
       ],
       "language": "eng",
       "roles": ["main"]
@@ -125,10 +89,7 @@
     {
       "id": "aac_128k",
       "clips": [
-        {
-          "type": "source",
-          "path": "tears-of-steel/tears-of-steel-aac-128k.mp4"
-        }
+        { "type": "source", "path": "tears-of-steel/tears-of-steel-aac-128k.mp4" }
       ],
       "language": "eng",
       "roles": ["main"]
@@ -136,10 +97,7 @@
     {
       "id": "eac3_384k",
       "clips": [
-        {
-          "type": "source",
-          "path": "tears-of-steel/tears-of-steel-eac3-384k.mp4"
-        }
+        { "type": "source", "path": "tears-of-steel/tears-of-steel-eac3-384k.mp4" }
       ],
       "language": "eng",
       "roles": ["main"]
@@ -147,10 +105,7 @@
     {
       "id": "eng_std",
       "clips": [
-        {
-          "type": "source",
-          "path": "tears-of-steel/tears-of-steel-en.srt"
-        }
+        { "type": "source", "path": "tears-of-steel/tears-of-steel-en.srt" }
       ],
       "language": "eng",
       "label":"English",
@@ -159,10 +114,7 @@
     {
       "id": "eng_hoh",
       "clips": [
-        {
-          "type": "source",
-          "path": "tears-of-steel/tears-of-steel-en-hoh.srt"
-        }
+        { "type": "source", "path": "tears-of-steel/tears-of-steel-en-hoh.srt" }
       ],
       "language": "eng",
       "label": "English (CC)",
@@ -172,10 +124,7 @@
     {
       "id": "eng_for",
       "clips": [
-        {
-          "type": "source",
-          "path": "tears-of-steel/tears-of-steel-en-for.srt"
-        }
+        { "type": "source", "path": "tears-of-steel/tears-of-steel-en-for.srt" }
       ],
       "language": "eng",
       "label":"English (F)",

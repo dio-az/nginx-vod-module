@@ -4,10 +4,7 @@
     {
       "id": "1500k",
       "clips": [
-        {
-          "type": "source",
-          "path": "cosmos-laundromat/cosmos-laundromat-avc-aac-1500k.mp4"
-        }
+        { "type": "source", "path": "cosmos-laundromat/cosmos-laundromat-avc-aac-1500k.mp4" }
       ],
       "roles": ["main"]
     }
