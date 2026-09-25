@@ -64,6 +64,13 @@ enum {
 	MEDIA_CLOSED_CAPTIONS_PARAM_COUNT,
 };
 
+enum {
+	MEDIA_DASH_DESCRIPTOR_PARAM_SCHEME_ID_URI,
+	MEDIA_DASH_DESCRIPTOR_PARAM_VALUE,
+
+	MEDIA_DASH_DESCRIPTOR_PARAM_COUNT,
+};
+
 typedef struct {
 	media_filter_parse_context_t base;
 	get_clip_ranges_result_t clip_ranges;
@@ -103,6 +110,8 @@ static vod_status_t media_set_parse_bitrate(void* ctx, vod_json_value_t* value, 
 static vod_status_t media_set_parse_source_type(void* ctx, vod_json_value_t* value, void* dest);
 static vod_status_t media_set_parse_bool(void* ctx, vod_json_value_t* value, void* dest);
 static vod_status_t media_set_parse_string_array(void* ctx, vod_json_value_t* value, void* dest);
+static vod_status_t
+media_set_parse_dash_descriptor_array(void* ctx, vod_json_value_t* value, void* dest);
 
 // constants
 static json_parser_union_type_def_t media_clip_union_params[] = {
@@ -176,6 +185,10 @@ static json_object_value_def_t media_sequence_params[] = {
      offsetof(media_sequence_t, avg_bitrate),
      media_set_parse_bitrate},
 	{vod_string("roles"), VOD_JSON_ARRAY, offsetof(media_sequence_t, tags.roles), media_set_parse_string_array},
+	{vod_string("accessibility"),
+     VOD_JSON_ARRAY,
+     offsetof(media_sequence_t, tags.accessibility),
+     media_set_parse_dash_descriptor_array},
 	{vod_null_string, 0, 0, NULL},
 };
 
@@ -190,6 +203,12 @@ static json_object_key_def_t media_closed_captions_params[] = {
 	{vod_string("language"), VOD_JSON_STRING, MEDIA_CLOSED_CAPTIONS_PARAM_LANGUAGE},
 	{vod_string("label"), VOD_JSON_STRING, MEDIA_CLOSED_CAPTIONS_PARAM_LABEL},
 	{vod_string("default"), VOD_JSON_BOOL, MEDIA_CLOSED_CAPTIONS_PARAM_DEFAULT},
+	{vod_null_string, 0, 0},
+};
+
+static json_object_key_def_t media_dash_descriptor_params[] = {
+	{vod_string("schemeIdUri"), VOD_JSON_STRING, MEDIA_DASH_DESCRIPTOR_PARAM_SCHEME_ID_URI},
+	{vod_string("value"), VOD_JSON_STRING, MEDIA_DASH_DESCRIPTOR_PARAM_VALUE},
 	{vod_null_string, 0, 0},
 };
 
@@ -253,6 +272,7 @@ static vod_hash_t media_clip_union_hash;
 static vod_hash_t media_sequence_hash;
 static vod_hash_t media_notification_hash;
 static vod_hash_t media_closed_captions_hash;
+static vod_hash_t media_dash_descriptor_hash;
 static vod_hash_t media_set_hash;
 static vod_hash_t media_clip_hash;
 
@@ -264,6 +284,7 @@ static hash_definition_t hash_definitions[] = {
 	HASH_TABLE(media_notification),
 	HASH_TABLE(media_clip),
 	HASH_TABLE(media_closed_captions),
+	HASH_TABLE(media_dash_descriptor),
 	{NULL, NULL, 0, NULL},
 };
 
@@ -401,6 +422,7 @@ media_set_parse_string_array(void* ctx, vod_json_value_t* value, void* dest) {
 	vod_array_t* result = dest;
 	vod_json_array_t* array = &value->v.arr;
 	vod_array_part_t* part = &array->part;
+	vod_json_value_t element;
 	vod_str_t* source;
 	vod_str_t* destination;
 	vod_status_t rc;
@@ -415,6 +437,20 @@ media_set_parse_string_array(void* ctx, vod_json_value_t* value, void* dest) {
 		);
 		return VOD_BAD_MAPPING;
 	}
+
+	if (array->count == 0) {
+		return VOD_OK;
+	}
+
+	rc = vod_array_init(result, context->request_context->pool, array->count, sizeof(*destination));
+	if (rc != VOD_OK) {
+		vod_log_debug0(
+			VOD_LOG_DEBUG_LEVEL, context->request_context->log, 0, "media_set_parse_string_array: vod_array_init failed"
+		);
+		return VOD_ALLOC_FAILED;
+	}
+
+	element.type = VOD_JSON_STRING;
 
 	for (source = part->first;; source++) {
 		if ((void*)source >= part->last) {
@@ -434,25 +470,113 @@ media_set_parse_string_array(void* ctx, vod_json_value_t* value, void* dest) {
 			return VOD_ALLOC_FAILED;
 		}
 
-		destination->len = 0;
-		destination->data = vod_alloc(context->request_context->pool, source->len);
-		if (destination->data == NULL) {
-			vod_log_debug0(
-				VOD_LOG_DEBUG_LEVEL, context->request_context->log, 0, "media_set_parse_string_array: vod_alloc failed"
-			);
-			return VOD_ALLOC_FAILED;
+		element.v.str = *source;
+
+		rc = media_set_parse_null_term_string(&context->request_context, &element, destination);
+		if (rc != VOD_OK) {
+			return rc;
+		}
+	}
+
+	return VOD_OK;
+}
+
+static vod_status_t
+media_set_parse_dash_descriptor_array(void* ctx, vod_json_value_t* value, void* dest) {
+	media_set_parse_sequences_context_t* context = ctx;
+	vod_array_t* result = dest;
+	vod_json_array_t* array = &value->v.arr;
+	vod_array_part_t* part = &array->part;
+	vod_json_value_t* params[MEDIA_DASH_DESCRIPTOR_PARAM_COUNT];
+	vod_json_object_t* cur_pos;
+	dash_descriptor_t* descriptor;
+	vod_status_t rc;
+
+	if (array->type != VOD_JSON_OBJECT && array->count > 0) {
+		vod_log_error(
+			VOD_LOG_ERR,
+			context->request_context->log,
+			0,
+			"media_set_parse_dash_descriptor_array: invalid array type %d expected object",
+			array->type
+		);
+		return VOD_BAD_MAPPING;
+	}
+
+	if (array->count == 0) {
+		return VOD_OK;
+	}
+
+	rc = vod_array_init(result, context->request_context->pool, array->count, sizeof(*descriptor));
+	if (rc != VOD_OK) {
+		vod_log_debug0(
+			VOD_LOG_DEBUG_LEVEL,
+			context->request_context->log,
+			0,
+			"media_set_parse_dash_descriptor_array: vod_array_init failed"
+		);
+		return VOD_ALLOC_FAILED;
+	}
+
+	for (cur_pos = part->first;; cur_pos++) {
+		if ((void*)cur_pos >= part->last) {
+			if (part->next == NULL) {
+				break;
+			}
+
+			part = part->next;
+			cur_pos = part->first;
 		}
 
-		rc = vod_json_decode_string(destination, source);
-		if (rc != VOD_JSON_OK) {
+		vod_memzero(params, sizeof(params));
+
+		vod_json_get_object_values(cur_pos, &media_dash_descriptor_hash, params);
+
+		if (params[MEDIA_DASH_DESCRIPTOR_PARAM_SCHEME_ID_URI] == NULL) {
 			vod_log_error(
 				VOD_LOG_ERR,
 				context->request_context->log,
 				0,
-				"media_set_parse_string_array: vod_json_decode_string failed %i",
-				rc
+				"media_set_parse_dash_descriptor_array: missing schemeIdUri in descriptor object"
 			);
 			return VOD_BAD_MAPPING;
+		}
+
+		if (params[MEDIA_DASH_DESCRIPTOR_PARAM_VALUE] == NULL) {
+			vod_log_error(
+				VOD_LOG_ERR,
+				context->request_context->log,
+				0,
+				"media_set_parse_dash_descriptor_array: missing value in descriptor object"
+			);
+			return VOD_BAD_MAPPING;
+		}
+
+		descriptor = vod_array_push(result);
+		if (descriptor == NULL) {
+			vod_log_debug0(
+				VOD_LOG_DEBUG_LEVEL,
+				context->request_context->log,
+				0,
+				"media_set_parse_dash_descriptor_array: vod_array_push failed"
+			);
+			return VOD_ALLOC_FAILED;
+		}
+
+		rc = media_set_parse_null_term_string(
+			&context->request_context,
+			params[MEDIA_DASH_DESCRIPTOR_PARAM_SCHEME_ID_URI],
+			&descriptor->scheme_id_uri
+		);
+		if (rc != VOD_OK) {
+			return rc;
+		}
+
+		rc = media_set_parse_null_term_string(
+			&context->request_context, params[MEDIA_DASH_DESCRIPTOR_PARAM_VALUE], &descriptor->value
+		);
+		if (rc != VOD_OK) {
+			return rc;
 		}
 	}
 
@@ -1069,14 +1193,8 @@ media_set_parse_sequences(
 		cur_output->tags.characteristics.len = 0;
 		cur_output->tags.is_autoselect = 1;
 		cur_output->tags.is_default = -1;
-
-		rc = vod_array_init(&cur_output->tags.roles, request_context->pool, 1, sizeof(vod_str_t));
-		if (rc != VOD_OK) {
-			vod_log_debug0(
-				VOD_LOG_DEBUG_LEVEL, request_context->log, 0, "media_set_parse_sequences: roles vod_array_init failed"
-			);
-			return VOD_ALLOC_FAILED;
-		}
+		vod_memzero(&cur_output->tags.roles, sizeof(cur_output->tags.roles));
+		vod_memzero(&cur_output->tags.accessibility, sizeof(cur_output->tags.accessibility));
 
 		cur_output->first_key_frame_offset = 0;
 		cur_output->key_frame_durations = NULL;

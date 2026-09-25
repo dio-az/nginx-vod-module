@@ -1017,14 +1017,8 @@ ngx_http_vod_parse_uri_path(
 		cur_sequence->tags.characteristics.len = 0;
 		cur_sequence->tags.is_autoselect = 1;
 		cur_sequence->tags.is_default = -1;
-
-		rc = ngx_array_init(&cur_sequence->tags.roles, r->pool, 1, sizeof(ngx_str_t));
-		if (rc != NGX_OK) {
-			ngx_log_debug0(
-				NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "ngx_http_vod_parse_uri_path: roles ngx_array_init failed"
-			);
-			return ngx_http_vod_status_to_ngx_error(r, VOD_ALLOC_FAILED);
-		}
+		ngx_memzero(&cur_sequence->tags.roles, sizeof(cur_sequence->tags.roles));
+		ngx_memzero(&cur_sequence->tags.accessibility, sizeof(cur_sequence->tags.accessibility));
 
 		cur_sequence->first_key_frame_offset = 0;
 		cur_sequence->key_frame_durations = NULL;
