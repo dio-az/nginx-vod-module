@@ -242,6 +242,11 @@ typedef struct {
 } audio_media_info_t;
 
 typedef struct {
+	vod_str_t scheme_id_uri;
+	vod_str_t value;
+} dash_descriptor_t;
+
+typedef struct {
 	language_id_t language;
 	vod_str_t lang_str;
 	vod_str_t label;
@@ -250,6 +255,7 @@ typedef struct {
 	bool_t is_autoselect;
 	bool_t is_default;
 	vod_array_t roles;
+	vod_array_t accessibility;
 } media_tags_t;
 
 typedef struct media_info_s {

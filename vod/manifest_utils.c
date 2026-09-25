@@ -403,11 +403,18 @@ track_group_key_get_hash(track_group_key_t* key) {
 	              + key->tags.is_forced * 31
 	              + vod_crc32_short(key->tags.label.data, key->tags.label.len)
 	              + vod_crc32_short(key->tags.characteristics.data, key->tags.characteristics.len);
-
 	vod_str_t* role;
+	dash_descriptor_t* descriptor;
+
 	for (uint32_t role_index = 0; role_index < key->tags.roles.nelts; role_index++) {
 		role = (vod_str_t*)key->tags.roles.elts + role_index;
 		hash += vod_crc32_short(role->data, role->len);
+	}
+
+	for (uint32_t descriptor_index = 0; descriptor_index < key->tags.accessibility.nelts; descriptor_index++) {
+		descriptor = (dash_descriptor_t*)key->tags.accessibility.elts + descriptor_index;
+		hash += vod_crc32_short(descriptor->scheme_id_uri.data, descriptor->scheme_id_uri.len)
+		      + vod_crc32_short(descriptor->value.data, descriptor->value.len);
 	}
 
 	return hash;
@@ -416,8 +423,11 @@ track_group_key_get_hash(track_group_key_t* key) {
 static int8_t
 track_group_key_compare(track_group_key_t* key1, track_group_key_t* key2) {
 	uint32_t role_index;
+	uint32_t descriptor_index;
 	vod_str_t* role1;
 	vod_str_t* role2;
+	dash_descriptor_t* descriptor1;
+	dash_descriptor_t* descriptor2;
 	int8_t rc;
 
 	if (key1->codec_id != key2->codec_id) {
@@ -467,6 +477,37 @@ track_group_key_compare(track_group_key_t* key1, track_group_key_t* key2) {
 		}
 
 		rc = vod_memcmp(role1->data, role2->data, role1->len);
+		if (rc != 0) {
+			return rc;
+		}
+	}
+
+	if (key1->tags.accessibility.nelts != key2->tags.accessibility.nelts) {
+		return key1->tags.accessibility.nelts < key2->tags.accessibility.nelts ? -1 : 1;
+	}
+
+	for (descriptor_index = 0; descriptor_index < key1->tags.accessibility.nelts; descriptor_index++) {
+		descriptor1 = (dash_descriptor_t*)key1->tags.accessibility.elts + descriptor_index;
+		descriptor2 = (dash_descriptor_t*)key2->tags.accessibility.elts + descriptor_index;
+
+		if (descriptor1->scheme_id_uri.len != descriptor2->scheme_id_uri.len) {
+			return descriptor1->scheme_id_uri.len < descriptor2->scheme_id_uri.len ? -1 : 1;
+		}
+
+		rc = vod_memcmp(
+			descriptor1->scheme_id_uri.data,
+			descriptor2->scheme_id_uri.data,
+			descriptor1->scheme_id_uri.len
+		);
+		if (rc != 0) {
+			return rc;
+		}
+
+		if (descriptor1->value.len != descriptor2->value.len) {
+			return descriptor1->value.len < descriptor2->value.len ? -1 : 1;
+		}
+
+		rc = vod_memcmp(descriptor1->value.data, descriptor2->value.data, descriptor1->value.len);
 		if (rc != 0) {
 			return rc;
 		}

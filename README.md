@@ -573,11 +573,14 @@ Optional fields:
 - `label` - a friendly string that identifies the sequence. If a language is specified, a default
   label will be automatically derived by it - e.g. if language is `ita`, by default `italiano`
   will be used as the label.
-  > For `roles`, `characteristics`, and `forced`, the label must be explicitly specified. The
-  > default label does not consider them.
+  > For `roles`, `accessibility`, `characteristics`, and `forced`, the label must be explicitly
+  > specified. The default label does not consider them.
 
 - `roles` - an array of role schemes as defined in
-  [ISO/IEC 23009-1](https://www.iso.org/standard/83314.html) Section 5.8.5.5.
+  [ISO/IEC 23009-1](https://www.iso.org/standard/23009-1) Section 5.8.5.5.
+- `accessibility` - an array of [DASH descriptor](#dash-descriptor) objects, emitted as
+  `<Accessibility>` elements of the `AdaptationSet`, as defined in
+  [ISO/IEC 23009-1](https://www.iso.org/standard/23009-1) Section 5.8.4.3.
 - `default` - a boolean that sets the value of the `DEFAULT` attribute of `#EXT-X-MEDIA` tags using
   this sequence. If not specified, the first `#EXT-X-MEDIA` tag in each group returns `DEFAULT=YES`.
 - `autoselect` - a boolean that sets the value of the `AUTOSELECT` attribute of `#EXT-X-MEDIA` tags
@@ -594,9 +597,9 @@ Optional fields:
   use the value to populate the `AVERAGE-BANDWIDTH` attribute of `#EXT-X-STREAM-INF` in HLS.
 
 > [!IMPORTANT]
-> The options `label`, `roles`, `characteristics`, and `forced` are used to group tracks. As HLS
-> does not have the concept of **video** `AdaptationSet`, any use of these options will cause the
-> HLS manifest builder to consider only the **first** video group.
+> The options `label`, `roles`, `accessibility`, `characteristics`, and `forced` are used to group
+> tracks. As HLS does not have the concept of **video** `AdaptationSet`, any use of these options
+> will cause the HLS manifest builder to consider only the **first** video group.
 
 #### Clip (abstract)
 
@@ -738,6 +741,15 @@ Optional fields:
 - `language` - a 3-letter (ISO-639-2) language code that indicates the language of the closed
   caption track.
 
+#### DASH descriptor
+
+> As defined in [ISO/IEC 23009-1](https://www.iso.org/standard/23009-1) Section 5.8.
+
+Mandatory fields:
+
+- `schemeIdUri` - a string containing the URI that identifies the scheme, e.g.
+  `urn:tva:metadata:cs:AudioPurposeCS:2007`.
+- `value` - a string containing the value within the scheme, e.g. `"1"` for Audio Description.
 
 ### Security
 

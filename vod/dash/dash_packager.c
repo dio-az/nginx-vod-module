@@ -99,6 +99,8 @@ static const char mpd_audio_channel_config_eac3[] =
 	"          schemeIdUri=\"tag:dolby.com,2014:dash:audio_channel_configuration:2011\"\n"
 	"          value=\"%uxD\"/>\n";
 
+static const char mpd_accessibility[] = "      <Accessibility schemeIdUri=\"%V\" value=\"%V\"/>\n";
+
 static const char mpd_role[] = "      <Role schemeIdUri=\"urn:mpeg:dash:role:2011\" value=\"%V\"/>\n";
 
 static const char mpd_representation_header_video[] =
@@ -297,8 +299,11 @@ static dash_codec_info_t dash_codecs[VOD_CODEC_ID_COUNT] = {
 static bool_t
 dash_packager_compare_tracks(uintptr_t bitrate_threshold, const media_info_t* mi1, const media_info_t* mi2) {
 	uint32_t role_index;
+	uint32_t descriptor_index;
 	vod_str_t* role1;
 	vod_str_t* role2;
+	dash_descriptor_t* descriptor1;
+	dash_descriptor_t* descriptor2;
 
 	if (mi1->bitrate == 0
 	    || mi2->bitrate == 0
@@ -341,6 +346,20 @@ dash_packager_compare_tracks(uintptr_t bitrate_threshold, const media_info_t* mi
 		role2 = (vod_str_t*)mi2->tags.roles.elts + role_index;
 
 		if (!vod_str_equals(*role1, *role2)) {
+			return FALSE;
+		}
+	}
+
+	if (mi1->tags.accessibility.nelts != mi2->tags.accessibility.nelts) {
+		return FALSE;
+	}
+
+	for (descriptor_index = 0; descriptor_index < mi1->tags.accessibility.nelts; descriptor_index++) {
+		descriptor1 = (dash_descriptor_t*)mi1->tags.accessibility.elts + descriptor_index;
+		descriptor2 = (dash_descriptor_t*)mi2->tags.accessibility.elts + descriptor_index;
+
+		if (!vod_str_equals(descriptor1->scheme_id_uri, descriptor2->scheme_id_uri)
+		    || !vod_str_equals(descriptor1->value, descriptor2->value)) {
 			return FALSE;
 		}
 	}
@@ -637,6 +656,18 @@ dash_packager_write_frame_rate(uint32_t duration, uint32_t timescale, vod_str_t*
 }
 
 static u_char*
+dash_packager_write_accessibility(u_char* p, media_info_t* media_info) {
+	dash_descriptor_t* descriptor;
+
+	for (uint32_t index = 0; index < media_info->tags.accessibility.nelts; index++) {
+		descriptor = (dash_descriptor_t*)media_info->tags.accessibility.elts + index;
+		p = vod_sprintf(p, mpd_accessibility, &descriptor->scheme_id_uri, &descriptor->value);
+	}
+
+	return p;
+}
+
+static u_char*
 dash_packager_write_roles(u_char* p, media_info_t* media_info) {
 	for (uint32_t role_index = 0; role_index < media_info->tags.roles.nelts; role_index++) {
 		p = vod_sprintf(p, mpd_role, (vod_str_t*)media_info->tags.roles.elts + role_index);
@@ -869,6 +900,7 @@ dash_packager_write_mpd_period(u_char* p, write_period_context_t* context) {
 				p = vod_sprintf(p, mpd_label, &reference_track->media_info.tags.label);
 			}
 
+			p = dash_packager_write_accessibility(p, &reference_track->media_info);
 			p = dash_packager_write_roles(p, &reference_track->media_info);
 
 			p = vod_sprintf(
@@ -892,6 +924,7 @@ dash_packager_write_mpd_period(u_char* p, write_period_context_t* context) {
 			);
 		}
 
+		p = dash_packager_write_accessibility(p, &reference_track->media_info);
 		p = dash_packager_write_roles(p, &reference_track->media_info);
 
 		// get the segment index start number
@@ -1219,7 +1252,9 @@ dash_packager_build_mpd(
 	uint32_t media_type;
 	uint32_t clip_index;
 	uint32_t role_index;
+	uint32_t descriptor_index;
 	vod_str_t* role;
+	dash_descriptor_t* descriptor;
 	vod_status_t rc;
 	u_char* p = NULL;
 
@@ -1360,6 +1395,14 @@ dash_packager_build_mpd(
 			for (role_index = 0; role_index < cur_track->media_info.tags.roles.nelts; role_index++) {
 				role = (vod_str_t*)cur_track->media_info.tags.roles.elts + role_index;
 				result_size += (sizeof(mpd_role) - 1) + role->len;
+			}
+
+			for (descriptor_index = 0; descriptor_index < cur_track->media_info.tags.accessibility.nelts; descriptor_index++) {
+				descriptor = (dash_descriptor_t*)cur_track->media_info.tags.accessibility.elts
+				           + descriptor_index;
+				result_size += (sizeof(mpd_accessibility) - 1)
+				             + descriptor->scheme_id_uri.len
+				             + descriptor->value.len;
 			}
 		}
 	}
