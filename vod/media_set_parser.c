@@ -401,6 +401,7 @@ media_set_parse_string_array(void* ctx, vod_json_value_t* value, void* dest) {
 	vod_array_t* result = dest;
 	vod_json_array_t* array = &value->v.arr;
 	vod_array_part_t* part = &array->part;
+	vod_json_value_t element;
 	vod_str_t* source;
 	vod_str_t* destination;
 	vod_status_t rc;
@@ -428,6 +429,8 @@ media_set_parse_string_array(void* ctx, vod_json_value_t* value, void* dest) {
 		return VOD_ALLOC_FAILED;
 	}
 
+	element.type = VOD_JSON_STRING;
+
 	for (source = part->first;; source++) {
 		if ((void*)source >= part->last) {
 			if (part->next == NULL) {
@@ -446,25 +449,11 @@ media_set_parse_string_array(void* ctx, vod_json_value_t* value, void* dest) {
 			return VOD_ALLOC_FAILED;
 		}
 
-		destination->len = 0;
-		destination->data = vod_alloc(context->request_context->pool, source->len);
-		if (destination->data == NULL) {
-			vod_log_debug0(
-				VOD_LOG_DEBUG_LEVEL, context->request_context->log, 0, "media_set_parse_string_array: vod_alloc failed"
-			);
-			return VOD_ALLOC_FAILED;
-		}
+		element.v.str = *source;
 
-		rc = vod_json_decode_string(destination, source);
-		if (rc != VOD_JSON_OK) {
-			vod_log_error(
-				VOD_LOG_ERR,
-				context->request_context->log,
-				0,
-				"media_set_parse_string_array: vod_json_decode_string failed %i",
-				rc
-			);
-			return VOD_BAD_MAPPING;
+		rc = media_set_parse_null_term_string(&context->request_context, &element, destination);
+		if (rc != VOD_OK) {
+			return rc;
 		}
 	}
 
