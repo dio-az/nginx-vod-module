@@ -580,6 +580,9 @@ m3u8_builder_build_iframe_playlist(
 		ctx.segment_file_name_prefix = &conf->segment_file_name_prefix;
 
 		if (container_format == HLS_CONTAINER_FMP4) {
+			// NOTE: match the -x3 in the segment names
+			media_set->version = 2;
+
 			rc = dash_packager_simulate_iframe_ranges(
 				request_context, &segment_durations, media_set, m3u8_builder_append_iframe_string, &ctx
 			);
