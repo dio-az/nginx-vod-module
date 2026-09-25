@@ -416,6 +416,18 @@ media_set_parse_string_array(void* ctx, vod_json_value_t* value, void* dest) {
 		return VOD_BAD_MAPPING;
 	}
 
+	if (array->count == 0) {
+		return VOD_OK;
+	}
+
+	rc = vod_array_init(result, context->request_context->pool, array->count, sizeof(*destination));
+	if (rc != VOD_OK) {
+		vod_log_debug0(
+			VOD_LOG_DEBUG_LEVEL, context->request_context->log, 0, "media_set_parse_string_array: vod_array_init failed"
+		);
+		return VOD_ALLOC_FAILED;
+	}
+
 	for (source = part->first;; source++) {
 		if ((void*)source >= part->last) {
 			if (part->next == NULL) {
@@ -1069,14 +1081,7 @@ media_set_parse_sequences(
 		cur_output->tags.characteristics.len = 0;
 		cur_output->tags.is_autoselect = 1;
 		cur_output->tags.is_default = -1;
-
-		rc = vod_array_init(&cur_output->tags.roles, request_context->pool, 1, sizeof(vod_str_t));
-		if (rc != VOD_OK) {
-			vod_log_debug0(
-				VOD_LOG_DEBUG_LEVEL, request_context->log, 0, "media_set_parse_sequences: roles vod_array_init failed"
-			);
-			return VOD_ALLOC_FAILED;
-		}
+		vod_memzero(&cur_output->tags.roles, sizeof(cur_output->tags.roles));
 
 		cur_output->first_key_frame_offset = 0;
 		cur_output->key_frame_durations = NULL;
