@@ -3315,6 +3315,15 @@ ngx_http_vod_init_frame_processing(ngx_http_vod_ctx_t* ctx) {
 
 		// in case of a range request that is fully contained in the output buffer (e.g. 0-0), we're done
 		if (ctx->size_limit != 0 && output_buffer.len >= ctx->size_limit && r->header_sent) {
+			// the progressive writer buffers its output instead of pushing every write down the filter
+			// chain, so flush it here - otherwise a range that falls entirely inside the header (e.g. a
+			// player probing the moov) would never reach the client and the request would hang
+			if (ctx->progressive != NULL) {
+				rc = ctx->segment_writer.write_tail(ctx->segment_writer.context, NULL, 0);
+				if (rc != VOD_OK) {
+					return ngx_http_vod_status_to_ngx_error(ctx->submodule_context.r, rc);
+				}
+			}
 			return NGX_DONE;
 		}
 	}
