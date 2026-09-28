@@ -205,7 +205,24 @@ struct ngx_http_vod_ctx_s {
 	ngx_http_vod_write_segment_context_t write_segment_buffer_context;
 	media_notification_t* notification;
 	uint32_t frames_bytes_read;
+
+	// multi-clip progressive download only, NULL for every other request
+	struct ngx_http_vod_progressive_stream_s* progressive;
 };
+
+// Multi-clip progressive download streaming state. The mdat of a progressive download is the whole
+// file, so unlike a segment it cannot be accumulated in memory: the muxed bytes are copied into a
+// small set of output buffers that are recycled once nginx has sent them, and reading pauses while
+// the client is not draining them. Memory stays bounded whatever the size of the download.
+typedef struct ngx_http_vod_progressive_stream_s {
+	ngx_http_vod_ctx_t* ctx;
+	pb_mdat_writer_state_t* mdat_writer;
+	ngx_chain_t* cur;  // buffer being filled, not handed to nginx yet
+	ngx_chain_t* busy; // buffers handed to nginx and not completely sent yet
+	ngx_chain_t* free; // sent buffers, ready to be filled again
+	ngx_http_event_handler_pt saved_write_event_handler;
+	bool_t paused;     // waiting for the client to drain the busy buffers before reading more
+} ngx_http_vod_progressive_stream_t;
 
 // typedefs
 typedef struct {
@@ -3350,6 +3367,12 @@ ngx_http_vod_process_media_frames(ngx_http_vod_ctx_t* ctx) {
 			return ngx_http_vod_status_to_ngx_error(ctx->submodule_context.r, rc);
 		}
 
+		// a progressive download paused until the client drains its output: don't read more yet,
+		// its write event handler resumes the frame processing
+		if (ctx->progressive != NULL && ctx->progressive->paused) {
+			return NGX_AGAIN;
+		}
+
 		if (ctx->size_limit != 0
 		    && ctx->write_segment_buffer_context.total_size >= ctx->size_limit
 		    && ctx->submodule_context.r->header_sent) {
@@ -3363,7 +3386,11 @@ ngx_http_vod_process_media_frames(ngx_http_vod_ctx_t* ctx) {
 
 		ctx->read_buffer.start = read_buf.buffer;
 		if (read_buf.buffer != NULL) {
-			ctx->read_buffer.end = read_buf.buffer + cache_buffer_size;
+			// a progressive download recycles the slot buffer, so pass its real capacity (it was
+			// allocated with room for the upstream headers and the padding) to reuse it instead of
+			// allocating a new buffer for every read
+			ctx->read_buffer.end = ctx->progressive != NULL ? read_buf.buffer_end
+			                                                : read_buf.buffer + cache_buffer_size;
 		}
 
 		rc = ngx_http_vod_alloc_read_buffer(
@@ -5250,6 +5277,210 @@ ngx_http_vod_handle_thumb_redirect(ngx_http_vod_ctx_t* ctx, media_set_t* media_s
 	 | VOD_CODEC_FLAG(DTS)                    \
 	 | VOD_CODEC_FLAG(FLAC))
 
+// Progressive download streaming (multi-clip). The response is sized up front (Content-Length is
+// sent before the mdat is produced), so it is streamed: every byte written goes into a small set of
+// fixed-size output buffers that are recycled once nginx has sent them, and the frame processor
+// pauses while PROGRESSIVE_MAX_BUSY_BUFFERS are still waiting to be sent, resuming on the client's
+// write event. Peak memory is then a few buffers, independent of the size of the download.
+#define PROGRESSIVE_OUTPUT_BUFFER_SIZE (256 * 1024)
+#define PROGRESSIVE_MAX_BUSY_BUFFERS (4)
+
+static u_char ngx_http_vod_progressive_buf_tag;
+
+static void ngx_http_vod_progressive_write_handler(ngx_http_request_t* r);
+
+// Hands `out` (may be NULL, to only push what nginx still holds) to the output filters and moves the
+// buffers nginx has completely sent back to the free list.
+static vod_status_t
+ngx_http_vod_progressive_send(ngx_http_vod_progressive_stream_t* stream, ngx_chain_t* out) {
+	ngx_http_request_t* r = stream->ctx->submodule_context.r;
+	ngx_int_t rc;
+
+	rc = ngx_http_output_filter(r, out);
+	if (rc == NGX_ERROR) {
+		// the connection dropped or an allocation failed, the exact error code doesn't matter
+		ngx_log_debug0(
+			NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "ngx_http_vod_progressive_send: ngx_http_output_filter failed"
+		);
+		return VOD_ALLOC_FAILED;
+	}
+
+	ngx_chain_update_chains(
+		r->pool, &stream->free, &stream->busy, &out, (ngx_buf_tag_t)&ngx_http_vod_progressive_buf_tag
+	);
+	return VOD_OK;
+}
+
+static vod_status_t
+ngx_http_vod_progressive_send_cur(ngx_http_vod_progressive_stream_t* stream) {
+	ngx_chain_t* out = stream->cur;
+
+	if (out == NULL || out->buf->last == out->buf->pos) {
+		return VOD_OK;
+	}
+
+	stream->cur = NULL;
+	return ngx_http_vod_progressive_send(stream, out);
+}
+
+// segment_writer_t.write_tail of a progressive download: copies the bytes into the output buffers.
+// A zero size call (from the response finalization) sends the partially filled last buffer.
+static vod_status_t
+ngx_http_vod_progressive_write(void* context, u_char* buffer, uint32_t size) {
+	ngx_http_vod_progressive_stream_t* stream = context;
+	ngx_http_request_t* r = stream->ctx->submodule_context.r;
+	ngx_chain_t* cl;
+	ngx_buf_t* b;
+	vod_status_t rc;
+	size_t n;
+
+	if (size == 0) {
+		return ngx_http_vod_progressive_send_cur(stream);
+	}
+
+	while (size > 0) {
+		if (stream->cur == NULL) {
+			if (stream->free != NULL) {
+				cl = stream->free;
+				stream->free = cl->next;
+				b = cl->buf;
+				b->pos = b->last = b->start;
+				b->flush = 0;
+				b->last_buf = 0;
+				b->last_in_chain = 0;
+			} else {
+				cl = ngx_alloc_chain_link(r->pool);
+				if (cl == NULL) {
+					return VOD_ALLOC_FAILED;
+				}
+
+				b = ngx_create_temp_buf(r->pool, PROGRESSIVE_OUTPUT_BUFFER_SIZE);
+				if (b == NULL) {
+					return VOD_ALLOC_FAILED;
+				}
+
+				b->tag = (ngx_buf_tag_t)&ngx_http_vod_progressive_buf_tag;
+				cl->buf = b;
+			}
+
+			cl->next = NULL;
+			stream->cur = cl;
+		}
+
+		b = stream->cur->buf;
+		n = vod_min(size, (size_t)(b->end - b->last));
+		b->last = ngx_cpymem(b->last, buffer, n);
+		buffer += n;
+		size -= n;
+		stream->ctx->write_segment_buffer_context.total_size += n;
+
+		if (b->last == b->end) {
+			rc = ngx_http_vod_progressive_send_cur(stream);
+			if (rc != VOD_OK) {
+				return rc;
+			}
+		}
+	}
+
+	return VOD_OK;
+}
+
+static bool_t
+ngx_http_vod_progressive_output_full(ngx_http_vod_progressive_stream_t* stream) {
+	ngx_uint_t count = 0;
+	ngx_chain_t* cl;
+
+	for (cl = stream->busy; cl != NULL; cl = cl->next) {
+		count++;
+	}
+
+	return count >= PROGRESSIVE_MAX_BUSY_BUFFERS;
+}
+
+// Waits for the client connection to become writable, bounded by send_timeout.
+static ngx_int_t
+ngx_http_vod_progressive_wait_for_client(ngx_http_request_t* r) {
+	ngx_http_core_loc_conf_t* clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
+	ngx_event_t* wev = r->connection->write;
+
+	if (!wev->delayed) {
+		ngx_add_timer(wev, clcf->send_timeout);
+	}
+
+	return ngx_handle_write_event(wev, clcf->send_lowat);
+}
+
+// Frame processor of a progressive download: runs the mdat writer only while the output has room,
+// otherwise pauses (ngx_http_vod_process_media_frames returns without issuing a read).
+static vod_status_t
+ngx_http_vod_progressive_process_frames(void* context) {
+	ngx_http_vod_progressive_stream_t* stream = context;
+	ngx_http_request_t* r = stream->ctx->submodule_context.r;
+	vod_status_t rc;
+
+	// reclaim the buffers the client consumed since the last call
+	rc = ngx_http_vod_progressive_send(stream, NULL);
+	if (rc != VOD_OK) {
+		return rc;
+	}
+
+	if (!ngx_http_vod_progressive_output_full(stream)) {
+		return mp4_progressive_mdat_writer_process(stream->mdat_writer);
+	}
+
+	if (ngx_http_vod_progressive_wait_for_client(r) != NGX_OK) {
+		return VOD_UNEXPECTED;
+	}
+
+	stream->saved_write_event_handler = r->write_event_handler;
+	r->write_event_handler = ngx_http_vod_progressive_write_handler;
+	stream->paused = TRUE;
+	return VOD_AGAIN;
+}
+
+// Write event handler while a progressive download is paused: once the client drained some output,
+// restores the original handler and resumes the frame processing.
+static void
+ngx_http_vod_progressive_write_handler(ngx_http_request_t* r) {
+	ngx_http_vod_ctx_t* ctx = ngx_http_get_module_ctx(r, ngx_http_vod_module);
+	ngx_http_vod_progressive_stream_t* stream = ctx->progressive;
+	ngx_event_t* wev = r->connection->write;
+	ngx_int_t rc;
+
+	if (wev->timedout) {
+		ngx_log_error(NGX_LOG_INFO, r->connection->log, NGX_ETIMEDOUT, "client timed out");
+		r->connection->timedout = 1;
+		ngx_http_vod_finalize_request(ctx, NGX_HTTP_REQUEST_TIME_OUT);
+		return;
+	}
+
+	if (ngx_http_vod_progressive_send(stream, NULL) != VOD_OK) {
+		ngx_http_vod_finalize_request(ctx, NGX_ERROR);
+		return;
+	}
+
+	if (ngx_http_vod_progressive_output_full(stream)) {
+		if (ngx_http_vod_progressive_wait_for_client(r) != NGX_OK) {
+			ngx_http_vod_finalize_request(ctx, NGX_ERROR);
+		}
+		return;
+	}
+
+	if (wev->timer_set) {
+		ngx_del_timer(wev);
+	}
+
+	stream->paused = FALSE;
+	r->write_event_handler = stream->saved_write_event_handler;
+
+	rc = ctx->state_machine(ctx);
+	if (rc == NGX_AGAIN) {
+		return;
+	}
+
+	ngx_http_vod_finalize_request(ctx, rc);
+}
+
 // Builds the whole progressive response: ftyp + a non-fragmented moov whose sample tables span every
 // clip, + the mdat box header (output_buffer), then streams the mdat payload track by track. Used
 // only for multi-clip progressive downloads; single-clip progressive still uses the byte-range dump.
@@ -5265,7 +5496,8 @@ ngx_http_vod_progressive_init_frame_processor(
 ) {
 	request_context_t* request_context = &submodule_context->request_context;
 	media_set_t* media_set = &submodule_context->media_set;
-	pb_mdat_writer_state_t* state;
+	ngx_http_vod_progressive_stream_t* stream;
+	ngx_http_vod_ctx_t* ctx;
 	vod_str_t header;
 	vod_str_t ct;
 	size_t content_length;
@@ -5294,16 +5526,31 @@ ngx_http_vod_progressive_init_frame_processor(
 		return NGX_OK;
 	}
 
+	stream = ngx_pcalloc(submodule_context->r->pool, sizeof(*stream));
+	if (stream == NULL) {
+		ngx_log_debug0(
+			NGX_LOG_DEBUG_HTTP, request_context->log, 0, "ngx_http_vod_progressive_init_frame_processor: ngx_pcalloc failed"
+		);
+		return ngx_http_vod_status_to_ngx_error(submodule_context->r, VOD_ALLOC_FAILED);
+	}
+
+	ctx = ngx_http_get_module_ctx(submodule_context->r, ngx_http_vod_module);
+	stream->ctx = ctx;
+
+	// the whole response - the header written by the caller, the mdat and the final flush from the
+	// response finalization - goes through the bounded progressive output buffers
+	segment_writer->write_tail = ngx_http_vod_progressive_write;
+	segment_writer->context = stream;
+
 	rc = mp4_progressive_mdat_writer_init(
 		request_context,
 		media_set,
-		segment_writer->write_tail,
-		segment_writer->context,
-		// reuse_buffers: a progressive download streams the whole file, so recycle the read cache
-		// slots instead of pinning a fresh buffer per read in the request pool (which grows with the
-		// output size and OOMs the worker). nginx copies unsent temporary buffers, so reuse is safe.
+		ngx_http_vod_progressive_write,
+		stream,
+		// reuse_buffers: the progressive writer copies every read into its own output buffers, so the
+		// read cache can recycle its slots instead of allocating a new buffer for every read
 		TRUE,
-		&state
+		&stream->mdat_writer
 	);
 	if (rc != VOD_OK) {
 		ngx_log_debug1(
@@ -5316,8 +5563,9 @@ ngx_http_vod_progressive_init_frame_processor(
 		return ngx_http_vod_status_to_ngx_error(submodule_context->r, rc);
 	}
 
-	*frame_processor = (ngx_http_vod_frame_processor_t)mp4_progressive_mdat_writer_process;
-	*frame_processor_state = state;
+	ctx->progressive = stream;
+	*frame_processor = ngx_http_vod_progressive_process_frames;
+	*frame_processor_state = stream;
 
 	return NGX_OK;
 }
