@@ -221,7 +221,7 @@ typedef struct ngx_http_vod_progressive_stream_s {
 	ngx_chain_t* busy; // buffers handed to nginx and not completely sent yet
 	ngx_chain_t* free; // sent buffers, ready to be filled again
 	ngx_http_event_handler_pt saved_write_event_handler;
-	bool_t paused;     // waiting for the client to drain the busy buffers before reading more
+	bool_t paused; // waiting for the client to drain the busy buffers before reading more
 } ngx_http_vod_progressive_stream_t;
 
 // typedefs
@@ -1693,10 +1693,10 @@ ngx_http_vod_init_parse_params_frames(
 		ctx->submodule_context.media_set.initial_segment_clip_relative_index =
 			clip_ranges.clip_relative_segment_index;
 	} else if (ctx->submodule_context.request_params.segment_time == INVALID_SEGMENT_TIME) {
-		// neither a segment index nor a segment time: read this source's whole clip window with real
-		// frames (progressive multi-clip download - one full clip window per source, concatenated).
-		// This is the SEGMENT-class equivalent of the manifest/OTHER whole-clip range above, but not a
-		// simulation, so the frame bytes are actually read.
+		// neither a segment index nor a segment time: read this source's whole clip window with
+		// real frames (progressive multi-clip download - one full clip window per source,
+		// concatenated). This is the SEGMENT-class equivalent of the manifest/OTHER whole-clip
+		// range above, but not a simulation, so the frame bytes are actually read.
 		range->timescale = 1000;
 		range->original_clip_time = 0;
 		range->start = 0;
@@ -5290,8 +5290,8 @@ static u_char ngx_http_vod_progressive_buf_tag;
 
 static void ngx_http_vod_progressive_write_handler(ngx_http_request_t* r);
 
-// Hands `out` (may be NULL, to only push what nginx still holds) to the output filters and moves the
-// buffers nginx has completely sent back to the free list.
+// Hands `out` (may be NULL, to only push what nginx still holds) to the output filters and moves
+// the buffers nginx has completely sent back to the free list.
 static vod_status_t
 ngx_http_vod_progressive_send(ngx_http_vod_progressive_stream_t* stream, ngx_chain_t* out) {
 	ngx_http_request_t* r = stream->ctx->submodule_context.r;
@@ -5548,8 +5548,8 @@ ngx_http_vod_progressive_init_frame_processor(
 		media_set,
 		ngx_http_vod_progressive_write,
 		stream,
-		// reuse_buffers: the progressive writer copies every read into its own output buffers, so the
-		// read cache can recycle its slots instead of allocating a new buffer for every read
+		// reuse_buffers: the progressive writer copies every read into its own output buffers, so
+	    // the read cache can recycle its slots instead of allocating a new buffer for every read
 		TRUE,
 		&stream->mdat_writer
 	);
@@ -5576,10 +5576,10 @@ ngx_http_vod_progressive_init_frame_processor(
 // single byte-range dump. init_frame_processor above turns the filtered tracks into one MP4.
 static const ngx_http_vod_request_t progressive_download_request = {
 	REQUEST_FLAG_SINGLE_TRACK_PER_MEDIA_TYPE | REQUEST_FLAG_PARSE_ALL_CLIPS,
-	// SAVE_RAW_ATOMS is required: this response builds the moov itself and passes no stsd writer, so
-	// mp4_init_segment reads each track's raw stsd atom (codec config) from raw_atoms[RTA_STSD]. Without
-	// it that atom is unpopulated and its garbage size blows up the moov allocation. FRAMES_ALL gives the
-	// mdat frames; INITIAL_PTS_DELAY the ctts base.
+	// SAVE_RAW_ATOMS is required: this response builds the moov itself and passes no stsd writer,
+    // so mp4_init_segment reads each track's raw stsd atom (codec config) from raw_atoms[RTA_STSD].
+    // Without it that atom is unpopulated and its garbage size blows up the moov allocation.
+    // FRAMES_ALL gives the mdat frames; INITIAL_PTS_DELAY the ctts base.
 	PARSE_FLAG_FRAMES_ALL | PARSE_FLAG_INITIAL_PTS_DELAY | PARSE_FLAG_SAVE_RAW_ATOMS,
 	REQUEST_CLASS_SEGMENT,
 	PROGRESSIVE_DOWNLOAD_SUPPORTED_CODECS,

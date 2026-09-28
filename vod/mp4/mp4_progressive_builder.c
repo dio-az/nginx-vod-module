@@ -1,7 +1,7 @@
 #include "mp4_progressive_builder.h"
 #include "mp4_defs.h"
-#include "mp4_write_stream.h"
 #include "mp4_init_segment.h"
+#include "mp4_write_stream.h"
 
 // Builds the populated sample tables (stbl children) for a non-fragmented, multi-clip
 // progressive MP4. This is the piece nginx-vod-module lacks: mp4_init_segment.c writes an
@@ -23,8 +23,7 @@
 // Iterate every frame of output track `track_index` across all clips, in output order.
 // The callback returns VOD_OK to continue.
 static void
-pb_walk_track_stats(media_set_t* media_set, uint32_t track_index, pb_track_stats_t* out)
-{
+pb_walk_track_stats(media_set_t* media_set, uint32_t track_index, pb_track_stats_t* out) {
 	uint32_t total_track_count = media_set->total_track_count;
 	uint32_t clip_index;
 	bool_t first = TRUE;
@@ -35,7 +34,8 @@ pb_walk_track_stats(media_set_t* media_set, uint32_t track_index, pb_track_stats
 	out->stsz_uniform = TRUE;
 
 	for (clip_index = 0; clip_index < media_set->clip_count; clip_index++) {
-		media_track_t* track = &media_set->filtered_tracks[clip_index * total_track_count + track_index];
+		media_track_t* track =
+			&media_set->filtered_tracks[clip_index * total_track_count + track_index];
 		frame_list_part_t* part = &track->frames;
 		input_frame_t* cur;
 
@@ -81,8 +81,7 @@ pb_walk_track_stats(media_set_t* media_set, uint32_t track_index, pb_track_stats
 // Size of the six stbl children for one track, given its stats. stsd is added by the moov
 // assembler (reused from mp4_init_segment via the stsd writer), not here.
 uint64_t
-mp4_progressive_stbl_children_size(const pb_track_stats_t* s, bool_t use_co64, bool_t emit_ctts)
-{
+mp4_progressive_stbl_children_size(const pb_track_stats_t* s, bool_t use_co64, bool_t emit_ctts) {
 	uint64_t size = 0;
 
 	// stts: fullbox + entry_count + 8 * runs
@@ -122,8 +121,7 @@ mp4_progressive_stbl_children_size(const pb_track_stats_t* s, bool_t use_co64, b
 // ---------------------------------------------------------------------------
 
 static u_char*
-pb_write_stts(u_char* p, media_set_t* media_set, uint32_t track_index, uint32_t run_count)
-{
+pb_write_stts(u_char* p, media_set_t* media_set, uint32_t track_index, uint32_t run_count) {
 	uint32_t total_track_count = media_set->total_track_count;
 	uint32_t clip_index;
 	size_t atom_size = ATOM_HEADER_SIZE + 8 + (size_t)run_count * 8;
@@ -136,7 +134,8 @@ pb_write_stts(u_char* p, media_set_t* media_set, uint32_t track_index, uint32_t 
 	write_be32(p, run_count);
 
 	for (clip_index = 0; clip_index < media_set->clip_count; clip_index++) {
-		media_track_t* track = &media_set->filtered_tracks[clip_index * total_track_count + track_index];
+		media_track_t* track =
+			&media_set->filtered_tracks[clip_index * total_track_count + track_index];
 		frame_list_part_t* part = &track->frames;
 		input_frame_t* cur;
 		for (; part != NULL; part = part->next) {
@@ -164,8 +163,7 @@ pb_write_stts(u_char* p, media_set_t* media_set, uint32_t track_index, uint32_t 
 }
 
 static u_char*
-pb_write_stsc(u_char* p, uint32_t frame_count)
-{
+pb_write_stsc(u_char* p, uint32_t frame_count) {
 	size_t atom_size = ATOM_HEADER_SIZE + 8 + 12;
 	write_atom_header(p, atom_size, 's', 't', 's', 'c');
 	write_fullbox_header(p, 0, 0);
@@ -177,8 +175,7 @@ pb_write_stsc(u_char* p, uint32_t frame_count)
 }
 
 static u_char*
-pb_write_stsz(u_char* p, media_set_t* media_set, uint32_t track_index, const pb_track_stats_t* s)
-{
+pb_write_stsz(u_char* p, media_set_t* media_set, uint32_t track_index, const pb_track_stats_t* s) {
 	uint32_t total_track_count = media_set->total_track_count;
 	uint32_t clip_index;
 	size_t atom_size = ATOM_HEADER_SIZE + 12 + (s->stsz_uniform ? 0 : (size_t)s->frame_count * 4);
@@ -191,7 +188,8 @@ pb_write_stsz(u_char* p, media_set_t* media_set, uint32_t track_index, const pb_
 		return p;
 	}
 	for (clip_index = 0; clip_index < media_set->clip_count; clip_index++) {
-		media_track_t* track = &media_set->filtered_tracks[clip_index * total_track_count + track_index];
+		media_track_t* track =
+			&media_set->filtered_tracks[clip_index * total_track_count + track_index];
 		frame_list_part_t* part = &track->frames;
 		input_frame_t* cur;
 		for (; part != NULL; part = part->next) {
@@ -204,8 +202,7 @@ pb_write_stsz(u_char* p, media_set_t* media_set, uint32_t track_index, const pb_
 }
 
 static u_char*
-pb_write_stco(u_char* p, uint64_t chunk_offset, bool_t use_co64)
-{
+pb_write_stco(u_char* p, uint64_t chunk_offset, bool_t use_co64) {
 	if (use_co64) {
 		size_t atom_size = ATOM_HEADER_SIZE + 8 + 8;
 		write_atom_header(p, atom_size, 'c', 'o', '6', '4');
@@ -223,8 +220,7 @@ pb_write_stco(u_char* p, uint64_t chunk_offset, bool_t use_co64)
 }
 
 static u_char*
-pb_write_stss(u_char* p, media_set_t* media_set, uint32_t track_index, uint32_t stss_count)
-{
+pb_write_stss(u_char* p, media_set_t* media_set, uint32_t track_index, uint32_t stss_count) {
 	uint32_t total_track_count = media_set->total_track_count;
 	uint32_t clip_index;
 	uint32_t sample_number = 0;
@@ -234,7 +230,8 @@ pb_write_stss(u_char* p, media_set_t* media_set, uint32_t track_index, uint32_t 
 	write_fullbox_header(p, 0, 0);
 	write_be32(p, stss_count);
 	for (clip_index = 0; clip_index < media_set->clip_count; clip_index++) {
-		media_track_t* track = &media_set->filtered_tracks[clip_index * total_track_count + track_index];
+		media_track_t* track =
+			&media_set->filtered_tracks[clip_index * total_track_count + track_index];
 		frame_list_part_t* part = &track->frames;
 		input_frame_t* cur;
 		for (; part != NULL; part = part->next) {
@@ -250,8 +247,7 @@ pb_write_stss(u_char* p, media_set_t* media_set, uint32_t track_index, uint32_t 
 }
 
 static u_char*
-pb_write_ctts(u_char* p, media_set_t* media_set, uint32_t track_index, uint32_t run_count)
-{
+pb_write_ctts(u_char* p, media_set_t* media_set, uint32_t track_index, uint32_t run_count) {
 	uint32_t total_track_count = media_set->total_track_count;
 	uint32_t clip_index;
 	size_t atom_size = ATOM_HEADER_SIZE + 8 + (size_t)run_count * 8;
@@ -265,7 +261,8 @@ pb_write_ctts(u_char* p, media_set_t* media_set, uint32_t track_index, uint32_t 
 	write_fullbox_header(p, 0, 0);
 	write_be32(p, run_count);
 	for (clip_index = 0; clip_index < media_set->clip_count; clip_index++) {
-		media_track_t* track = &media_set->filtered_tracks[clip_index * total_track_count + track_index];
+		media_track_t* track =
+			&media_set->filtered_tracks[clip_index * total_track_count + track_index];
 		frame_list_part_t* part = &track->frames;
 		input_frame_t* cur;
 		for (; part != NULL; part = part->next) {
@@ -302,8 +299,8 @@ mp4_progressive_write_stbl_children(
 	const pb_track_stats_t* s,
 	uint64_t chunk_offset,
 	bool_t use_co64,
-	bool_t emit_ctts)
-{
+	bool_t emit_ctts
+) {
 	p = pb_write_stts(p, media_set, track_index, s->stts_run_count);
 	p = pb_write_stsc(p, s->frame_count);
 	p = pb_write_stsz(p, media_set, track_index, s);
@@ -319,8 +316,7 @@ mp4_progressive_write_stbl_children(
 
 // Gather stats for every output track. Caller allocates stats[total_track_count].
 void
-mp4_progressive_collect_stats(media_set_t* media_set, pb_track_stats_t* stats)
-{
+mp4_progressive_collect_stats(media_set_t* media_set, pb_track_stats_t* stats) {
 	uint32_t t;
 	for (t = 0; t < media_set->total_track_count; t++) {
 		pb_walk_track_stats(media_set, t, &stats[t]);
@@ -333,8 +329,7 @@ mp4_progressive_collect_stats(media_set_t* media_set, pb_track_stats_t* stats)
 
 // Sum of every track's contiguous mdat run.
 uint64_t
-mp4_progressive_total_data_size(const pb_track_stats_t* stats, uint32_t track_count)
-{
+mp4_progressive_total_data_size(const pb_track_stats_t* stats, uint32_t track_count) {
 	uint64_t total = 0;
 	uint32_t t;
 	for (t = 0; t < track_count; t++) {
@@ -351,8 +346,8 @@ mp4_progressive_compute_chunk_offsets(
 	uint32_t mdat_header_size,
 	const pb_track_stats_t* stats,
 	uint32_t track_count,
-	uint64_t* out_offsets)
-{
+	uint64_t* out_offsets
+) {
 	uint64_t pos = moov_total_size + mdat_header_size;
 	uint32_t t;
 	for (t = 0; t < track_count; t++) {
@@ -375,11 +370,11 @@ typedef struct {
 } pb_stbl_ctx_t;
 
 static u_char*
-pb_stbl_write(void* ctx_, u_char* p)
-{
+pb_stbl_write(void* ctx_, u_char* p) {
 	pb_stbl_ctx_t* c = ctx_;
 	return mp4_progressive_write_stbl_children(
-		p, c->media_set, c->track_index, c->stats, c->chunk_offset, c->use_co64, c->emit_ctts);
+		p, c->media_set, c->track_index, c->stats, c->chunk_offset, c->use_co64, c->emit_ctts
+	);
 }
 
 // Build ftyp + moov for a non-fragmented multi-clip MP4 into `result`. The caller writes the mdat
@@ -393,8 +388,8 @@ mp4_progressive_build_moov(
 	media_set_t* media_set,
 	uint32_t mdat_header_size,
 	bool_t* out_use_co64,
-	vod_str_t* result)
-{
+	vod_str_t* result
+) {
 	uint32_t ttc = media_set->total_track_count;
 	pb_track_stats_t* stats;
 	pb_stbl_ctx_t* ctxs;
@@ -428,7 +423,8 @@ mp4_progressive_build_moov(
 		ctxs[t].use_co64 = use_co64;
 		ctxs[t].emit_ctts = stats[t].ctts_needed;
 
-		writers[t].atom_size = mp4_progressive_stbl_children_size(&stats[t], use_co64, stats[t].ctts_needed);
+		writers[t].atom_size =
+			mp4_progressive_stbl_children_size(&stats[t], use_co64, stats[t].ctts_needed);
 		writers[t].write = pb_stbl_write;
 		writers[t].context = &ctxs[t];
 	}
@@ -469,8 +465,8 @@ mp4_progressive_build_header(
 	media_set_t* media_set,
 	vod_str_t* header,
 	size_t* content_length,
-	vod_str_t* content_type)
-{
+	vod_str_t* content_type
+) {
 	pb_track_stats_t* stats;
 	vod_str_t moov;
 	uint64_t total_data;
@@ -542,10 +538,9 @@ struct pb_mdat_writer_state_s {
 
 // Point the cursor at the frames of filtered_tracks[clip_index * ttc + track_index].
 static void
-pb_mdat_init_track(pb_mdat_writer_state_t* state)
-{
-	media_track_t* track = &state->media_set->filtered_tracks[
-		state->clip_index * state->total_track_count + state->track_index];
+pb_mdat_init_track(pb_mdat_writer_state_t* state) {
+	media_track_t* track =
+		&state->media_set->filtered_tracks[state->clip_index * state->total_track_count + state->track_index];
 
 	state->first_time = TRUE;
 	state->cur_frame_part = track->frames;
@@ -553,15 +548,15 @@ pb_mdat_init_track(pb_mdat_writer_state_t* state)
 
 	if (!state->reuse_buffers) {
 		state->cur_frame_part.frames_source->disable_buffer_reuse(
-			state->cur_frame_part.frames_source_context);
+			state->cur_frame_part.frames_source_context
+		);
 	}
 }
 
 // Advance to the next frame: walk parts within a clip, then clips within a track, then tracks.
 // Returns FALSE when every frame of every track has been emitted.
 static bool_t
-pb_mdat_move_to_next_frame(pb_mdat_writer_state_t* state)
-{
+pb_mdat_move_to_next_frame(pb_mdat_writer_state_t* state) {
 	while (state->cur_frame >= state->cur_frame_part.last_frame) {
 		if (state->cur_frame_part.next != NULL) {
 			state->cur_frame_part = *state->cur_frame_part.next;
@@ -594,14 +589,15 @@ mp4_progressive_mdat_writer_init(
 	write_callback_t write_callback,
 	void* write_context,
 	bool_t reuse_buffers,
-	pb_mdat_writer_state_t** result)
-{
+	pb_mdat_writer_state_t** result
+) {
 	pb_mdat_writer_state_t* state;
 
 	state = vod_alloc(request_context->pool, sizeof(*state));
 	if (state == NULL) {
 		vod_log_debug0(
-			VOD_LOG_DEBUG_LEVEL, request_context->log, 0, "mp4_progressive_mdat_writer_init: vod_alloc failed");
+			VOD_LOG_DEBUG_LEVEL, request_context->log, 0, "mp4_progressive_mdat_writer_init: vod_alloc failed"
+		);
 		return VOD_ALLOC_FAILED;
 	}
 
@@ -625,8 +621,7 @@ mp4_progressive_mdat_writer_init(
 // order is track-outer / clip-inner so the emitted bytes line up with the single per-track chunk
 // offsets written into stco/co64.
 vod_status_t
-mp4_progressive_mdat_writer_process(pb_mdat_writer_state_t* state)
-{
+mp4_progressive_mdat_writer_process(pb_mdat_writer_state_t* state) {
 	u_char* read_buffer;
 	uint32_t read_size;
 	u_char* write_buffer = NULL;
@@ -641,7 +636,8 @@ mp4_progressive_mdat_writer_process(pb_mdat_writer_state_t* state)
 		}
 
 		rc = state->cur_frame_part.frames_source->start_frame(
-			state->cur_frame_part.frames_source_context, state->cur_frame, NULL);
+			state->cur_frame_part.frames_source_context, state->cur_frame, NULL
+		);
 		if (rc != VOD_OK) {
 			return rc;
 		}
@@ -651,7 +647,8 @@ mp4_progressive_mdat_writer_process(pb_mdat_writer_state_t* state)
 
 	for (;;) {
 		rc = state->cur_frame_part.frames_source->read(
-			state->cur_frame_part.frames_source_context, &read_buffer, &read_size, &frame_done);
+			state->cur_frame_part.frames_source_context, &read_buffer, &read_size, &frame_done
+		);
 		if (rc != VOD_OK) {
 			if (rc != VOD_AGAIN) {
 				return rc;
@@ -667,7 +664,8 @@ mp4_progressive_mdat_writer_process(pb_mdat_writer_state_t* state)
 					VOD_LOG_ERR,
 					state->request_context->log,
 					0,
-					"mp4_progressive_mdat_writer_process: no data was handled, probably a truncated file");
+					"mp4_progressive_mdat_writer_process: no data was handled, probably a truncated file"
+				);
 				return VOD_BAD_DATA;
 			}
 
@@ -719,7 +717,8 @@ mp4_progressive_mdat_writer_process(pb_mdat_writer_state_t* state)
 		}
 
 		rc = state->cur_frame_part.frames_source->start_frame(
-			state->cur_frame_part.frames_source_context, state->cur_frame, NULL);
+			state->cur_frame_part.frames_source_context, state->cur_frame, NULL
+		);
 		if (rc != VOD_OK) {
 			return rc;
 		}

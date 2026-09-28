@@ -260,8 +260,11 @@ static const u_char fixed_stbl_atoms[] = {
 
 static void
 mp4_init_segment_get_track_sizes(
-	media_set_t* media_set, media_track_t* cur_track, atom_writer_t* stsd_atom_writer,
-	atom_writer_t* stbl_atom_writer, track_sizes_t* result
+	media_set_t* media_set,
+	media_track_t* cur_track,
+	atom_writer_t* stsd_atom_writer,
+	atom_writer_t* stbl_atom_writer,
+	track_sizes_t* result
 ) {
 	uint32_t timescale = media_set->filtered_tracks->media_info.timescale;
 	size_t tkhd_atom_size;
@@ -285,8 +288,10 @@ mp4_init_segment_get_track_sizes(
 		mdhd_atom_size = ATOM_HEADER_SIZE + sizeof(mdhd_atom_t);
 	}
 
-	result->stbl_size = ATOM_HEADER_SIZE + result->stsd_size
-	    + (stbl_atom_writer != NULL ? stbl_atom_writer->atom_size : sizeof(fixed_stbl_atoms));
+	result->stbl_size =
+		ATOM_HEADER_SIZE
+		+ result->stsd_size
+		+ (stbl_atom_writer != NULL ? stbl_atom_writer->atom_size : sizeof(fixed_stbl_atoms));
 	result->minf_size = ATOM_HEADER_SIZE + sizeof(dinf_atom) + result->stbl_size;
 	switch (cur_track->media_info.media_type) {
 	case MEDIA_TYPE_VIDEO:
@@ -678,9 +683,10 @@ mp4_init_segment_calc_size(
 	uint32_t i;
 
 	// mvex/trex declare fragments; a non-fragmented (progressive) moov must omit them
-	result->mvex_atom_size = no_mvex
-		? 0
-		: ATOM_HEADER_SIZE + (ATOM_HEADER_SIZE + sizeof(trex_atom_t)) * media_set->total_track_count;
+	result->mvex_atom_size =
+		no_mvex ? 0
+				: ATOM_HEADER_SIZE
+					  + (ATOM_HEADER_SIZE + sizeof(trex_atom_t)) * media_set->total_track_count;
 
 	result->moov_atom_size = ATOM_HEADER_SIZE + result->mvex_atom_size;
 
@@ -710,7 +716,9 @@ mp4_init_segment_calc_size(
 			stbl_atom_writer = NULL;
 		}
 
-		mp4_init_segment_get_track_sizes(media_set, &first_track[i], stsd_atom_writer, stbl_atom_writer, track_sizes);
+		mp4_init_segment_get_track_sizes(
+			media_set, &first_track[i], stsd_atom_writer, stbl_atom_writer, track_sizes
+		);
 
 		result->moov_atom_size += track_sizes->trak_size;
 	}
@@ -929,7 +937,9 @@ mp4_init_segment_build_ex(
 		return VOD_ALLOC_FAILED;
 	}
 
-	mp4_init_segment_calc_size(media_set, extra_moov_atoms_writer, stsd_atom_writers, stbl_atom_writers, no_mvex, sizes);
+	mp4_init_segment_calc_size(
+		media_set, extra_moov_atoms_writer, stsd_atom_writers, stbl_atom_writers, no_mvex, sizes
+	);
 
 	// head request optimization
 	if (size_only) {
@@ -948,8 +958,14 @@ mp4_init_segment_build_ex(
 
 	// write the init mp4
 	p = mp4_init_segment_write(
-		result->data, request_context, media_set, sizes, extra_moov_atoms_writer, stsd_atom_writers,
-		stbl_atom_writers, no_mvex
+		result->data,
+		request_context,
+		media_set,
+		sizes,
+		extra_moov_atoms_writer,
+		stsd_atom_writers,
+		stbl_atom_writers,
+		no_mvex
 	);
 
 	result->len = p - result->data;
