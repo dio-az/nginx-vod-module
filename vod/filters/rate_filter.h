@@ -2,8 +2,8 @@
 #define __RATE_FILTER_H__
 
 // includes
-#include "../media_set.h"
 #include "../json_parser.h"
+#include "../media_set.h"
 
 // typedefs
 typedef struct {

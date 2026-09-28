@@ -2,8 +2,8 @@
 #define __MP4_PSSH_H__
 
 // includes
-#include "mp4_init_segment.h"
 #include "../udrm.h"
+#include "mp4_init_segment.h"
 
 // macros
 #define mp4_pssh_is_common(info) \

@@ -1,6 +1,6 @@
 // include
-#include "ngx_cycle.h"
 #include "ngx_buffer_cache_internal.h"
+#include "ngx_cycle.h"
 
 // macros
 #define RAND(min, max) (rand() % ((max) - (min) + 1) + (min))
@@ -77,8 +77,8 @@ print_queue(ngx_queue_t* queue, const char* name, u_char* relative_offset) {
 	ngx_queue_t* cur;
 
 	printf("%s:\n", name);
-	for (cur = queue->next; cur != queue; cur = cur->next) {
-		entry = container_of(cur, ngx_buffer_cache_entry_t, queue_node);
+	for (cur = ngx_queue_head(queue); cur != ngx_queue_sentinel(queue); cur = ngx_queue_next(cur)) {
+		entry = ngx_queue_data(cur, ngx_buffer_cache_entry_t, queue_node);
 
 		printf(
 			"\tSO=%lx BS=%zx ST=%lu\n",

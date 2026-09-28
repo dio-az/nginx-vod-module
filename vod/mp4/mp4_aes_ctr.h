@@ -2,8 +2,8 @@
 #define __MP4_AES_CTR_H__
 
 // includes
-#include "../write_buffer.h"
 #include "../aes_defs.h"
+#include "../write_buffer.h"
 
 #define MP4_AES_CTR_KEY_SIZE (16)
 #define MP4_AES_CTR_IV_SIZE (8)

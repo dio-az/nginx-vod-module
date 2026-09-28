@@ -4,13 +4,13 @@
 #if (VOD_HAVE_LIB_AV_CODEC && VOD_HAVE_LIB_AV_FILTER)
 #include <libavcodec/avcodec.h>
 #include <libavfilter/avfilter.h>
-#include <libavfilter/buffersrc.h>
 #include <libavfilter/buffersink.h>
+#include <libavfilter/buffersrc.h>
 #include <libavutil/opt.h>
-#include "audio_encoder.h"
-#include "audio_decoder.h"
-#include "volume_map.h"
 #include "../input/frames_source_memory.h"
+#include "audio_decoder.h"
+#include "audio_encoder.h"
+#include "volume_map.h"
 
 // constants
 #define BUFFERSRC_ARGS_FORMAT \

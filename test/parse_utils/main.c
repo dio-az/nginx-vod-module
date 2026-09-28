@@ -1,6 +1,6 @@
+#include <ngx_core.h>
 #include <inttypes.h>
 #include <stdio.h>
-#include <ngx_core.h>
 #include <vod/parse_utils.h>
 
 volatile ngx_cycle_t* ngx_cycle;

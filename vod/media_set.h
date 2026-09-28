@@ -2,9 +2,8 @@
 #define __MEDIA_SET_H__
 
 // includes
-#include "media_format.h"
 #include "media_clip.h"
-#include "json_parser.h"
+#include "media_format.h"
 
 // constants
 #define SEGMENT_BASE_TIME_RELATIVE (ULLONG_MAX)
@@ -37,8 +36,6 @@ typedef enum {
 
 // typedefs
 struct segmenter_conf_s;
-struct audio_filter_s;
-struct media_sequence_s;
 typedef struct media_sequence_s media_sequence_t;
 
 typedef struct {

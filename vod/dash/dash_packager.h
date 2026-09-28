@@ -2,9 +2,9 @@
 #define __DASH_PACKAGER_H__
 
 // includes
+#include "../common.h"
 #include "../media_format.h"
 #include "../segmenter.h"
-#include "../common.h"
 
 // constants
 #define DASH_TIMESCALE (90000)

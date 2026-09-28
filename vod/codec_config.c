@@ -1,6 +1,6 @@
 #include "codec_config.h"
-#include "media_format.h"
 #include "bit_read_stream.h"
+#include "media_format.h"
 #include "mp4/mp4_defs.h"
 
 #define codec_config_copy_string(target, str)      \

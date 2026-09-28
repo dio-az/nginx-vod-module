@@ -57,7 +57,6 @@ typedef struct {
 	ngx_str_t iv;
 } media_clip_source_enc_t;
 
-struct media_clip_source_s;
 typedef struct media_clip_source_s media_clip_source_t;
 typedef struct ngx_http_vod_reader_s ngx_http_vod_reader_t;
 

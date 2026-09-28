@@ -172,10 +172,8 @@ vod_json_parse_object_key(vod_json_parser_state_t* state, vod_json_key_value_t* 
 			break;
 		}
 
-		if (c >= 'A' && c <= 'Z') {
-			c |= 0x20; // tolower
-			*state->cur_pos = c;
-		}
+		c = vod_tolower(c);
+		*state->cur_pos = c;
 
 		switch (c) {
 		case '\\':
@@ -852,10 +850,8 @@ vod_json_parse_union(
 	type_end = type.data + type.len;
 	for (cur_pos = type.data; cur_pos < type_end; cur_pos++) {
 		c = *cur_pos;
-		if (c >= 'A' && c <= 'Z') {
-			c |= 0x20; // tolower
-			*cur_pos = c;
-		}
+		c = vod_tolower(c);
+		*cur_pos = c;
 
 		key = vod_hash(key, c);
 	}

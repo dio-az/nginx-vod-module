@@ -1,4 +1,5 @@
 #include "subtitle_format.h"
+#include "../language_code.h"
 #include "../media_set.h"
 
 // typedefs
@@ -81,7 +82,7 @@ subtitle_parse(
 	tags = parse_params->source->sequence->tags;
 	if (tags.label.len == 0) {
 		// no language, assume English
-		ngx_str_set(&tags.lang_str, "eng");
+		vod_str_set(&tags.lang_str, "eng");
 		tags.language = VOD_LANG_EN;
 		lang_get_native_name(tags.language, &tags.label);
 	}

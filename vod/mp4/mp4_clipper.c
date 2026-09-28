@@ -1,9 +1,9 @@
 #include "mp4_clipper.h"
-#include "mp4_parser_base.h"
-#include "mp4_format.h"
-#include "mp4_write_stream.h"
-#include "mp4_defs.h"
 #include "../read_stream.h"
+#include "mp4_defs.h"
+#include "mp4_format.h"
+#include "mp4_parser_base.h"
+#include "mp4_write_stream.h"
 
 // macros
 #define set_be32(p, dw)                        \

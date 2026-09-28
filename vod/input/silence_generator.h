@@ -2,8 +2,8 @@
 #define __SILENCE_GENERATOR_H__
 
 // includes
-#include "../media_clip.h"
 #include "../json_parser.h"
+#include "../media_clip.h"
 
 // globals
 extern media_generator_t silence_generator;

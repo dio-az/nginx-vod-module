@@ -2,8 +2,8 @@
 #define _NGX_HTTP_VOD_HLS_CONF_H_INCLUDED_
 
 // includes
+#include <ngx_http.h>
 #include "vod/hls/m3u8_builder.h"
-#include "vod/hls/hls_muxer.h"
 
 // typedefs
 typedef struct {

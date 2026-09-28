@@ -1,12 +1,11 @@
-#include "dash_packager.h"
-#include "../read_stream.h"
-#include "../mp4/mp4_cenc_passthrough.h"
+#include "../common.h"
 #include "../mp4/mp4_cenc_encrypt.h"
-#include "../mp4/mp4_write_stream.h"
+#include "../mp4/mp4_cenc_passthrough.h"
 #include "../mp4/mp4_defs.h"
 #include "../mp4/mp4_pssh.h"
+#include "../mp4/mp4_write_stream.h"
 #include "../udrm.h"
-#include "../common.h"
+#include "dash_packager.h"
 
 // manifest constants
 static const u_char mpd_content_protection_cenc[] =

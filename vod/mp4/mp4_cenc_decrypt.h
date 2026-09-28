@@ -2,7 +2,7 @@
 #define __MP4_CENC_DECRYPT_H__
 
 // includes
-#include "mp4_parser.h"
+#include "../media_format.h"
 
 // globals
 extern frames_source_t mp4_cenc_decrypt_frames_source;

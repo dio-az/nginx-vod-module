@@ -8,7 +8,6 @@
 #define BUFFER_CACHE_KEY_SIZE (16)
 
 // typedefs
-struct ngx_buffer_cache_s;
 typedef struct ngx_buffer_cache_s ngx_buffer_cache_t;
 
 typedef struct {

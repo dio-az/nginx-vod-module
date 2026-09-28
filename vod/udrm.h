@@ -1,6 +1,9 @@
 #ifndef __UDRM_H__
 #define __UDRM_H__
 
+// includes
+#include "common.h"
+
 // constants
 #define DRM_SYSTEM_ID_SIZE (16)
 #define DRM_KEY_SIZE (16)

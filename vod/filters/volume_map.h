@@ -2,8 +2,8 @@
 #define __VOLUME_MAP_H__
 
 // includes
+#include <libavcodec/avcodec.h> // IWYU pragma: keep
 #include "../media_set.h"
-#include <libavcodec/avcodec.h>
 
 // constants
 #define VOLUME_MAP_INPUT_SAMPLE_FORMAT (AV_SAMPLE_FMT_FLTP)

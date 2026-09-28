@@ -3,12 +3,20 @@
 
 // includes
 #include <ngx_http.h>
-#include "ngx_http_vod_request_parse.h"
-#include "ngx_http_vod_conf.h"
 #include "vod/common.h"
 
 // functions
 void ngx_http_vod_set_status_index(ngx_uint_t index);
+
+static ngx_inline u_char*
+ngx_strrchr(u_char* p, u_char* last, u_char c) {
+	while (last > p) {
+		if (*(--last) == c) {
+			return last;
+		}
+	}
+	return NULL;
+}
 
 ngx_int_t
 ngx_http_vod_send_response(ngx_http_request_t* r, ngx_str_t* response, ngx_str_t* content_type);

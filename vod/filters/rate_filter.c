@@ -1,6 +1,6 @@
 #include "rate_filter.h"
-#include "audio_filter.h"
 #include "../media_set_parser.h"
+#include "audio_filter.h"
 
 // macros
 #define RATE_FILTER_DESC_PATTERN "[%uD]atempo=%uD.%02uD[%uD]"

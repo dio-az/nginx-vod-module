@@ -1,5 +1,6 @@
 #include "adts_encoder_filter.h"
 #include "../codec_config.h"
+#include "bit_fields.h"
 
 // macros
 #define THIS_FILTER (MEDIA_FILTER_ADTS)

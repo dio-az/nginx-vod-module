@@ -5,7 +5,6 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <ngx_http.h>
-#include <nginx.h>
 
 #if (NGX_THREADS)
 #include "ngx_async_open_file_cache.h"

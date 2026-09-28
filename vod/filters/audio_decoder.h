@@ -2,8 +2,8 @@
 #define __AUDIO_DECODER_H__
 
 // includes
-#include "../media_format.h"
 #include <libavcodec/avcodec.h>
+#include "../media_format.h"
 
 // macros
 #define audio_decoder_has_frame(decoder) \

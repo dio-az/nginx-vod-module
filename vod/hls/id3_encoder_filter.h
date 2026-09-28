@@ -3,8 +3,6 @@
 
 // includes
 #include "media_filter.h"
-#include "../media_format.h"
-#include "../common.h"
 
 // typedefs
 typedef struct {

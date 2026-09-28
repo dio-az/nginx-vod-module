@@ -1,8 +1,8 @@
 #include "mp4_cenc_decrypt.h"
-#include "mp4_aes_ctr.h"
-#include "mp4_parser.h"
-#include "../read_stream.h"
 #include "../buffer_pool.h"
+#include "../read_stream.h"
+#include "mp4_aes_ctr.h"
+#include "mp4_defs.h"
 
 // constants
 #define BUFFER_SIZE (65536)

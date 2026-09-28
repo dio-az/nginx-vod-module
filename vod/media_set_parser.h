@@ -2,6 +2,7 @@
 #define __MEDIA_SET_PARSER_H__
 
 // includes
+#include "json_parser.h"
 #include "media_set.h"
 
 // typedefs

@@ -2,18 +2,14 @@
 #define __HLS_MUXER_H__
 
 // includes
-#include "mp4_to_annexb_filter.h"
-#include "adts_encoder_filter.h"
-#include "mpegts_encoder_filter.h"
-#include "buffer_filter.h"
 #include "../media_format.h"
 #include "../segmenter.h"
+#include "mpegts_encoder_filter.h"
 
 // constants
 #define HLS_TIMESCALE (90000)
 
 // typedefs
-struct id3_context_s;
 typedef struct id3_context_s id3_context_t;
 
 typedef void (*hls_get_iframe_positions_callback_t)(

@@ -1,5 +1,7 @@
 #include "ngx_file_reader.h"
-#include <ngx_event.h>
+#if (NGX_THREADS)
+#include "ngx_async_open_file_cache.h"
+#endif // NGX_THREADS
 
 static ngx_int_t
 ngx_file_reader_init_open_file_info(

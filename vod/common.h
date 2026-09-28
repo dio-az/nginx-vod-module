@@ -35,68 +35,6 @@
 	((l1).len == (l2).len      \
 	 && ((l1).data == (l2).data || vod_memcmp((l1).data, (l2).data, (l1).len) == 0))
 
-#ifdef VOD_STAND_ALONE
-
-// includes
-#include <inttypes.h>
-#include <sys/types.h>
-#include <stdlib.h>
-#include <string.h>
-
-// macros
-#define vod_min(x, y) (((x) < (y)) ? (x) : (y))
-#define vod_max(x, y) (((x) > (y)) ? (x) : (y))
-
-#ifndef offsetof
-#define offsetof(TYPE, MEMBER) ((size_t)&((TYPE*)0)->MEMBER)
-#endif // offsetof
-
-// error codes
-#define VOD_OK 0
-#define VOD_AGAIN -2
-
-// memory set/copy functions
-#define vod_memcpy(dst, src, n) memcpy(dst, src, n)
-#define vod_memmove(dst, src, n) memmove(dst, src, n)
-#define vod_memset(buf, c, n) memset(buf, c, n)
-#define vod_memzero(buf, n) memset(buf, 0, n)
-
-// memory alloc functions
-#define vod_alloc(pool, size) malloc(size)
-#define vod_free(pool, ptr) free(ptr)
-
-#include "vod_array.h"
-
-#define VOD_LOG_STDERR 1
-#define VOD_LOG_EMERG 2
-#define VOD_LOG_ALERT 3
-#define VOD_LOG_CRIT 4
-#define VOD_LOG_ERR 5
-#define VOD_LOG_WARN 6
-#define VOD_LOG_NOTICE 7
-#define VOD_LOG_INFO 8
-
-#define VOD_LOG_DEBUG_LEVEL (0x100)
-
-#define vod_log_debug0(level, log, err, fmt)
-#define vod_log_debug1(level, log, err, fmt, arg1)
-#define vod_log_debug2(level, log, err, fmt, arg1, arg2)
-#define vod_log_debug3(level, log, err, fmt, arg1, arg2, arg3)
-#define vod_log_debug4(level, log, err, fmt, arg1, arg2, arg3, arg4)
-#define vod_log_debug5(level, log, err, fmt, arg1, arg2, arg3, arg4, arg5)
-#define vod_log_debug6(level, log, err, fmt, arg1, arg2, arg3, arg4, arg5, arg6)
-#define vod_log_debug7(level, log, err, fmt, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
-
-typedef int bool_t;
-typedef int vod_status_t;
-typedef unsigned int vod_uint_t;
-typedef void vod_pool_t;
-typedef void vod_log_t;
-
-void vod_log_error(vod_uint_t level, vod_log_t* log, int err, const char* fmt, ...);
-
-#else // VOD_STAND_ALONE
-
 // includes
 #include <ngx_core.h>
 #include <inttypes.h>
@@ -165,9 +103,12 @@ void vod_log_error(vod_uint_t level, vod_log_t* log, int err, const char* fmt, .
 #define vod_strstrn ngx_strstrn
 #define vod_strcmp ngx_strcmp
 #define vod_strlen ngx_strlen
+#define vod_str_set(str, text) ngx_str_set(str, text)
+#define vod_str_null(str) ngx_str_null(str)
 #define vod_strncmp(s1, s2, n) ngx_strncmp(s1, s2, n)
 #define vod_strncasecmp(s1, s2, n) ngx_strncasecmp(s1, s2, n)
 #define vod_pstrdup(pool, src) ngx_pstrdup(pool, src)
+#define vod_tolower(c) ngx_tolower(c)
 #define vod_hextoi(line, n) ngx_hextoi(line, n)
 #define vod_escape_json(dst, src, size) ngx_escape_json(dst, src, size)
 
@@ -175,18 +116,24 @@ void vod_log_error(vod_uint_t level, vod_log_t* log, int err, const char* fmt, .
 #define vod_array_init(array, pool, n, size) ngx_array_init(array, pool, n, size)
 #define vod_array_push(array) ngx_array_push(array)
 #define vod_array_push_n(array, count) ngx_array_push_n(array, count)
-#define vod_array_destroy(a) ngx_array_destroy(array)
+#define vod_array_destroy(a) ngx_array_destroy(a)
 
 // queue macros
 #define vod_queue_init(q) ngx_queue_init(q)
 #define vod_queue_empty(h) ngx_queue_empty(h)
 #define vod_queue_insert_tail(h, x) ngx_queue_insert_tail(h, x)
 #define vod_queue_head(h) ngx_queue_head(h)
+#define vod_queue_last(h) ngx_queue_last(h)
+#define vod_queue_sentinel(h) ngx_queue_sentinel(h)
+#define vod_queue_next(q) ngx_queue_next(q)
+#define vod_queue_prev(q) ngx_queue_prev(q)
 #define vod_queue_remove(x) ngx_queue_remove(x)
+#define vod_queue_data(q, type, link) ngx_queue_data(q, type, link)
 
 // rbtree functions
 #define vod_rbtree_init(tree, s, i) ngx_rbtree_init(tree, s, i)
 #define vod_rbtree_insert(tree, node) ngx_rbtree_insert(tree, node)
+#define vod_rbtree_data(node, type, link) ngx_rbtree_data(node, type, link)
 #define vod_rbt_red(node) ngx_rbt_red(node)
 
 // hash functions
@@ -286,8 +233,6 @@ typedef ngx_int_t vod_int_t;
 typedef ngx_uint_t vod_uint_t;
 typedef ngx_err_t vod_err_t;
 
-#endif // VOD_STAND_ALONE
-
 #if (VOD_DEBUG)
 
 #define vod_log_buffer(level, log, err, prefix, buffer, size) \
@@ -350,7 +295,6 @@ typedef struct {
 	void* context;
 } segment_writer_t;
 
-struct buffer_pool_s;
 typedef struct buffer_pool_s buffer_pool_t;
 
 typedef struct {

@@ -1,8 +1,8 @@
 #include "silence_generator.h"
-#include "frames_source_memory.h"
+#include "../media_set.h"
 #include "../media_set_parser.h"
 #include "../mp4/mp4_defs.h"
-#include "../media_set.h"
+#include "frames_source_memory.h"
 
 #define AAC_FRAME_SAMPLES (1024)
 #define AAC_SILENCE_FRAME ("\x21\x00\x49\x90\x02\x19\x00\x23\x80")
