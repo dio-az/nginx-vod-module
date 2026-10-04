@@ -480,6 +480,15 @@ mp4_init_segment_write_hvcc_atom(u_char* p, media_track_t* track) {
 }
 
 static u_char*
+mp4_init_segment_write_av1c_atom(u_char* p, media_track_t* track) {
+	size_t atom_size = ATOM_HEADER_SIZE + track->media_info.extra_data.len;
+
+	write_atom_header(p, atom_size, 'a', 'v', '1', 'C');
+	p = vod_copy(p, track->media_info.extra_data.data, track->media_info.extra_data.len);
+	return p;
+}
+
+static u_char*
 mp4_init_segment_write_stsd_video_entry(u_char* p, media_track_t* track) {
 	size_t atom_size = ATOM_HEADER_SIZE
 	                 + sizeof(sample_entry_t)
@@ -519,6 +528,10 @@ mp4_init_segment_write_stsd_video_entry(u_char* p, media_track_t* track) {
 
 	case VOD_CODEC_ID_HEVC:
 		p = mp4_init_segment_write_hvcc_atom(p, track);
+		break;
+
+	case VOD_CODEC_ID_AV1:
+		p = mp4_init_segment_write_av1c_atom(p, track);
 		break;
 	}
 
