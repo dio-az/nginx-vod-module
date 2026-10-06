@@ -200,7 +200,7 @@ ngx_http_vod_get_base_url(
 	}
 
 	if (file_uri->len) {
-		last_slash = ngx_strrchr(file_uri->data, file_uri->data + file_uri->len, '/');
+		last_slash = ngx_http_vod_strrchr(file_uri->data, file_uri->data + file_uri->len, '/');
 		if (last_slash == NULL) {
 			ngx_log_error(
 				NGX_LOG_ERR, r->connection->log, 0, "ngx_http_vod_get_base_url: no slash found in uri %V", file_uri

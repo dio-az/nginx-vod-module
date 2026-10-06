@@ -13,19 +13,6 @@ volatile ngx_cycle_t* ngx_cycle;
 volatile ngx_time_t* ngx_cached_time = &ngx_time;
 
 // nginx function stubs
-#if (NGX_HAVE_VARIADIC_MACROS)
-
-void
-ngx_log_error_core(ngx_uint_t level, ngx_log_t* log, ngx_err_t err, const char* fmt, ...)
-#else
-
-void
-ngx_log_error_core(ngx_uint_t level, ngx_log_t* log, ngx_err_t err, const char* fmt, va_list args)
-
-#endif
-{
-}
-
 void ngx_cdecl
 ngx_conf_log_error(ngx_uint_t level, ngx_conf_t* cf, ngx_err_t err, const char* fmt, ...) {}
 

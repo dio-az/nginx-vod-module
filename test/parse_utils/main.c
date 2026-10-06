@@ -7,19 +7,6 @@ volatile ngx_cycle_t* ngx_cycle;
 ngx_pool_t* pool;
 ngx_log_t ngx_log;
 
-#if (NGX_HAVE_VARIADIC_MACROS)
-
-void
-ngx_log_error_core(ngx_uint_t level, ngx_log_t* log, ngx_err_t err, const char* fmt, ...)
-#else
-
-void
-ngx_log_error_core(ngx_uint_t level, ngx_log_t* log, ngx_err_t err, const char* fmt, va_list args)
-
-#endif
-{
-}
-
 void*
 ngx_array_push(ngx_array_t* a) {
 	void *elt, *new_elts;

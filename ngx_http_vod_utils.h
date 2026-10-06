@@ -9,7 +9,7 @@
 void ngx_http_vod_set_status_index(ngx_uint_t index);
 
 static ngx_inline u_char*
-ngx_strrchr(u_char* p, u_char* last, u_char c) {
+ngx_http_vod_strrchr(u_char* p, u_char* last, u_char c) {
 	while (last > p) {
 		if (*(--last) == c) {
 			return last;
