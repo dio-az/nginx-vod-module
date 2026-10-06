@@ -11,7 +11,6 @@
 #include "ngx_http_vod_submodule.h"
 #include "ngx_http_vod_utils.h"
 #include "ngx_perf_counters.h"
-#include "vod/aes_defs.h"
 #include "vod/common.h"
 #include "vod/filters/audio_filter.h"
 #include "vod/filters/dynamic_clip.h"
@@ -28,6 +27,10 @@
 #include "vod/segmenter.h"
 #include "vod/subtitle/cap_format.h"
 #include "vod/subtitle/webvtt_format.h"
+
+#if (NGX_HAVE_OPENSSL_EVP)
+#include "vod/aes_defs.h"
+#endif // NGX_HAVE_OPENSSL_EVP
 
 #if (NGX_HAVE_LIB_AV_CODEC)
 #include "ngx_http_vod_thumb.h"
