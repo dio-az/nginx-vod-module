@@ -8,7 +8,6 @@
 #include "vod/dash/dash_packager.h"
 #include "vod/media_format.h"
 #include "vod/mkv/mkv_builder.h"
-#include "vod/mp4/mp4_defs.h"
 #include "vod/mp4/mp4_fragment.h"
 #include "vod/mp4/mp4_init_segment.h"
 #include "vod/subtitle/ttml_builder.h"
@@ -17,6 +16,7 @@
 
 #if (NGX_HAVE_OPENSSL_EVP)
 #include "vod/dash/edash_packager.h"
+#include "vod/mp4/mp4_defs.h"
 #include "vod/mp4/mp4_pssh.h"
 #endif // NGX_HAVE_OPENSSL_EVP
 
