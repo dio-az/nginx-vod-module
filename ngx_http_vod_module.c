@@ -736,7 +736,7 @@ ngx_http_vod_set_next_segment_uri_var(ngx_http_request_t* r, ngx_http_variable_v
 	}
 
 	// file name is the component after the last '/'
-	p = ngx_strrchr(uri->data, uri_end, '/');
+	p = ngx_http_vod_strrchr(uri->data, uri_end, '/');
 	file_name = p ? p + 1 : uri->data;
 
 	// segment file name is '<prefix>-<index>...': the index is the digit run after the first '-'
