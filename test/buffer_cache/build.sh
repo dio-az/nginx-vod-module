@@ -13,6 +13,7 @@ fi
 cc -Wall -g -obuffer_cache_test \
 	$NGINX_VOD_MODULE_SOURCE_DIR/ngx_buffer_cache.c \
 	$NGINX_VOD_MODULE_SOURCE_DIR/test/buffer_cache/main.c  \
+	$NGINX_VOD_MODULE_SOURCE_DIR/test/bare_stubs.c \
 	$NGINX_SOURCE_DIR/src/core/ngx_palloc.c \
 	$NGINX_SOURCE_DIR/src/os/unix/ngx_alloc.c \
 	$NGINX_SOURCE_DIR/src/core/ngx_string.c \

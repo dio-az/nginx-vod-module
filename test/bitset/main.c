@@ -3,19 +3,6 @@
 #include <stdio.h>
 #include <vod/common.h>
 
-#if (NGX_HAVE_VARIADIC_MACROS)
-
-void
-ngx_log_error_core(ngx_uint_t level, ngx_log_t* log, ngx_err_t err, const char* fmt, ...)
-#else
-
-void
-ngx_log_error_core(ngx_uint_t level, ngx_log_t* log, ngx_err_t err, const char* fmt, va_list args)
-
-#endif
-{
-}
-
 #define assert(cond)                                                              \
 	if (!(cond)) {                                                                \
 		printf("Error: assertion failed, file=%s line=%d\n", __FILE__, __LINE__); \
