@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 PACKAGES = {
+	'angie': 'download.angie.software/files',
 	'ffmpeg': 'ffmpeg.org/releases',
 	'nginx': 'nginx.org/download',
 }
@@ -25,7 +26,7 @@ ffmpeg = [
 	for version, arch in sorted(installs)
 ]
 
-tarballs = {('nginx', row['nginx-version']) for row in matrix}
+tarballs = {(row['server'], row['server-version']) for row in matrix}
 tarballs |= {('ffmpeg', row['ffmpeg-version']) for row in ffmpeg}
 
 source = [
