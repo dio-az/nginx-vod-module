@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.1](https://github.com/dio-az/nginx-vod-module/compare/v1.10.0...v1.10.1) (2026-10-06)
+
+### Bug Fixes
+
+- Rename `strrchr` helper to avoid collision ([#163](https://github.com/dio-az/nginx-vod-module/pull/163))
+
 ## [1.10.0](https://github.com/dio-az/nginx-vod-module/compare/v1.9.3...v1.10.0) (2026-09-25)
 
 **Config directives and runtime behavior remain unchanged.** This release updates build requirements to match modern distros like Ubuntu 24.04 LTS (NGINX 1.24, FFmpeg 6.1) and the CI test matrix.
