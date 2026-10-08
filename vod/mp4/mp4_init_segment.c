@@ -1,6 +1,4 @@
 #include "mp4_init_segment.h"
-#include "../read_stream.h"
-#include "../udrm.h"
 #include "mp4_defs.h"
 #include "mp4_write_stream.h"
 
@@ -961,6 +959,8 @@ mp4_init_segment_build(
 // encryption
 #if (VOD_HAVE_OPENSSL_EVP)
 #include "../aes_defs.h"
+#include "../read_stream.h"
+#include "../udrm.h"
 
 static vod_status_t
 mp4_init_segment_init_encrypted_stsd_writer(
