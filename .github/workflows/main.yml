@@ -89,7 +89,7 @@ jobs:
           retention-days: 1
 
   build:
-    name: Build for nginx ${{ matrix.nginx-version }}${{ matrix.ffmpeg-version && format(' with ffmpeg {0}', matrix.ffmpeg-version) || '' }} (${{ matrix.build-mode }}, ubuntu-${{ matrix.ubuntu-version }}, ${{ matrix.arch }})
+    name: Build for ${{ matrix.server }} ${{ matrix.server-version }}${{ matrix.ffmpeg-version && format(' with ffmpeg {0}', matrix.ffmpeg-version) || '' }} (${{ matrix.build-mode }}, ubuntu-${{ matrix.ubuntu-version }}, ${{ matrix.arch }})
     runs-on: ubuntu-${{ matrix.ubuntu-version }}${{ matrix.arch == 'arm64' && '-arm' || '' }}
     if: ${{ !cancelled() }}
     needs:
@@ -128,27 +128,27 @@ jobs:
           sudo ldconfig
       - uses: actions/download-artifact@v8
         with:
-          name: nginx-source-${{ matrix.nginx-version }}
-      - run: tar -xf nginx-source.tar
-      - working-directory: nginx
+          name: ${{ matrix.server }}-source-${{ matrix.server-version }}
+      - run: tar -xf ${{ matrix.server }}-source.tar
+      - working-directory: ${{ matrix.server }}
         run: |
           ../nginx-vod-module/scripts/build_basic.sh \
             ${{ matrix.build-mode }}=../nginx-vod-module \
             --with-cc-opt='-O3 ${{ matrix.arch == 'amd64' && '-mpopcnt' || '' }}'
           sudo make install
           sudo mkdir -p /var/spool/nginx
-      - run: /opt/nginx/sbin/nginx -V
+      - run: /opt/nginx/sbin/${{ matrix.server }} -V
       - if: matrix.ffmpeg-version
-        working-directory: nginx
+        working-directory: ${{ matrix.server }}
         run: |
           grep NGX_HAVE_LIB_AV_CODEC objs/ngx_auto_config.h
           grep NGX_HAVE_LIB_AV_FILTER objs/ngx_auto_config.h
           grep NGX_HAVE_LIB_SW_SCALE objs/ngx_auto_config.h
       - if: matrix.build-mode == '--add-dynamic-module'
-        run: sudo /opt/nginx/sbin/nginx -t -g 'load_module modules/ngx_http_vod_module.so;'
+        run: sudo /opt/nginx/sbin/${{ matrix.server }} -t -g 'load_module modules/ngx_http_vod_module.so;'
       - working-directory: nginx-vod-module/test
         env:
-          NGINX_SOURCE_DIR: ../../nginx
+          NGINX_SOURCE_DIR: ../../${{ matrix.server }}
           NGINX_VOD_MODULE_SOURCE_DIR: ../
         run: |
           ./bitset/build.sh

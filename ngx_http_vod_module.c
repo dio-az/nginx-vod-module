@@ -11,7 +11,6 @@
 #include "ngx_http_vod_submodule.h"
 #include "ngx_http_vod_utils.h"
 #include "ngx_perf_counters.h"
-#include "vod/aes_defs.h"
 #include "vod/common.h"
 #include "vod/filters/audio_filter.h"
 #include "vod/filters/dynamic_clip.h"
@@ -29,6 +28,10 @@
 #include "vod/segmenter.h"
 #include "vod/subtitle/cap_format.h"
 #include "vod/subtitle/webvtt_format.h"
+
+#if (NGX_HAVE_OPENSSL_EVP)
+#include "vod/aes_defs.h"
+#endif // NGX_HAVE_OPENSSL_EVP
 
 #if (NGX_HAVE_LIB_AV_CODEC)
 #include "ngx_http_vod_thumb.h"
@@ -751,7 +754,7 @@ ngx_http_vod_set_next_segment_uri_var(ngx_http_request_t* r, ngx_http_variable_v
 	}
 
 	// file name is the component after the last '/'
-	p = ngx_strrchr(uri->data, uri_end, '/');
+	p = ngx_http_vod_strrchr(uri->data, uri_end, '/');
 	file_name = p ? p + 1 : uri->data;
 
 	// segment file name is '<prefix>-<index>...': the index is the digit run after the first '-'

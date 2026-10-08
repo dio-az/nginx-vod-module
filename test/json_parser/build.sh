@@ -13,6 +13,7 @@ fi
 cc -Wall -g -ojson_parser_test \
 	$NGINX_VOD_MODULE_SOURCE_DIR/vod/json_parser.c \
 	$NGINX_VOD_MODULE_SOURCE_DIR/test/json_parser/main.c \
+	$NGINX_VOD_MODULE_SOURCE_DIR/test/bare_stubs.c \
 	$NGINX_SOURCE_DIR/src/core/ngx_string.c \
 	$NGINX_SOURCE_DIR/src/core/ngx_hash.c \
 	$NGINX_SOURCE_DIR/src/core/ngx_palloc.c \
