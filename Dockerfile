@@ -2,7 +2,7 @@
 
 FROM alpine:3.24 AS build
 
-ARG FFMPEG_VERSION=8.1
+ARG FFMPEG_VERSION=9.0
 ARG NGINX_VERSION=1.31
 
 RUN apk --no-cache add \
