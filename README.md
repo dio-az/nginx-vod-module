@@ -126,21 +126,26 @@ You will also need to install the [`ffmpeg`](https://ffmpeg.org) v6+.
 
 #### Quick start
 
-You can build and run a Docker image using the provided `Dockerfile`, which includes a basic
-implementation of `nginx-vod-module` with all required dependencies.
+Use a container engine with the provided [`Dockerfile`](./Dockerfile) to run a basic
+`nginx-vod-module` setup with all required dependencies, for example:
 
 ```sh
-docker image build -t nginx-vod-module .
-docker container run --rm -it -p 8000:8000 nginx-vod-module
+docker build -t nginx-vod-module .
+docker run --rm -p 8000:8000 nginx-vod-module
 ```
 
 > [!TIP]
-> The sample configuration files are available in the [`sample` folder](./sample). You can customize
-> the configurations based on your specific requirements.
+> The sample configuration files are available in the [`sample` folder](./sample). Customize them
+> to your requirements.
+
+The `demo` folder simulates the upstream servers. Serve it on port `8080`, for example:
 
 ```sh
-python3 -m http.server 8080 --directory demo
+npx http-server demo -p 8080
 ```
+
+> [!NOTE]
+> Serving source media files requires `Range` request support.
 
 Watch the demo content in your browser by visiting
 [Tears of Steel demo](http://localhost:8000/clear/tears-of-steel/.m3u8).
