@@ -9,14 +9,12 @@ write_buffer_queue_init(
 	write_buffer_queue_t* queue,
 	request_context_t* request_context,
 	write_callback_t write_callback,
-	void* write_context,
-	bool_t reuse_buffers
+	void* write_context
 ) {
 	queue->request_context = request_context;
 	queue->output_buffer_pool = request_context->output_buffer_pool;
 	queue->write_callback = write_callback;
 	queue->write_context = write_context;
-	queue->reuse_buffers = reuse_buffers;
 
 	vod_queue_init(&queue->buffers);
 	queue->cur_write_buffer = NULL;
@@ -122,9 +120,7 @@ write_buffer_queue_send(write_buffer_queue_t* queue, off_t max_offset) {
 			return rc;
 		}
 
-		if (!queue->reuse_buffers) {
-			cur_buffer->start_pos = NULL;
-		}
+		cur_buffer->start_pos = NULL;
 		cur_buffer->cur_pos = cur_buffer->start_pos;
 		vod_queue_insert_tail(&queue->buffers, &cur_buffer->link);
 	}

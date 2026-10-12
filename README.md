@@ -807,24 +807,6 @@ In terms of security, the main advantage of CDN tokens over URL encryption is th
 usually expire, while encrypted URLs do not (someone who obtains a playable URL will be able to use
 it indefinitely).
 
-#### Media encryption
-
-This module supports AES-128 and SAMPLE-AES HLS encryption schemes. The main difference between
-media encryption and [DRM](#drm) is the mechanism used to transfer the encryption key to the client.
-With media encryption the key is fetched by the client by performing a simple GET request to
-`nginx-vod-module`, while with DRM the key is returned inside a vendor specific license response.
-
-Media encryption reduces the problem of securing the media to the need to secure the encryption key.
-The media segment URLs (which compose the vast majority of the traffic) can be completely
-unprotected, and easily cacheable by any proxies between the client and servers (unlike
-tokenization). The encryption key request can then be protected using one of the methods mentioned
-above (CDN tokens, NGINX access rules).
-
-In addition, it is possible to configure the `nginx-vod-module` to return the encryption key over
-HTTPS while having the segments delivered over HTTP. The way to configure this is to set
-[`vod_segments_base_url`](#vod_segments_base_url) to `http://<domain>` and set
-[`vod_base_url`](#vod_base_url) to `https://<domain>`.
-
 #### DRM
 
 This module has the ability to perform on-the-fly encryption for DASH (CENC) and FairPlay HLS. The
@@ -1290,8 +1272,7 @@ only).
 - **context**: `http`, `server`, `location`
 
 Configures the size and shared memory object name of the response cache. The response cache holds
-manifests and other non-video content (like DASH init segment, HLS encryption key). Video segments
-are not cached.
+manifests and other non-video content (like DASH init segment). Video segments are not cached.
 
 #### vod_live_response_cache
 
@@ -1613,8 +1594,8 @@ notification that is being fired. The response from this URI is ignored.
 - **default**: `empty`
 - **context**: `http`, `server`, `location`
 
-Sets the seed that is used to generate the TS encryption key and DASH encryption IVs. The parameter
-value can contain [variables](#nginx-variables), and will usually have the structure
+Sets the seed that is used to generate the DASH and HLS (SAMPLE-AES-CTR) encryption IVs. The
+parameter value can contain [variables](#nginx-variables), and will usually have the structure
 `secret-$vod_filepath`. See the list of [variables](#nginx-variables) added by this module.
 
 #### vod_encryption_iv_seed
@@ -1623,8 +1604,9 @@ value can contain [variables](#nginx-variables), and will usually have the struc
 - **default**: `empty`
 - **context**: `http`, `server`, `location`
 
-Sets the seed that is used to generate the encryption IV, currently applies only to HLS/fMP4 with
-AES-128 encryption. The parameter value can contain [variables](#nginx-variables).
+Sets the seed used to generate the encryption IV. Applies only to HLS with the fMP4 container, when
+the DRM response does not include an IV. The parameter value can contain
+[variables](#nginx-variables).
 
 #### vod_drm_enabled
 

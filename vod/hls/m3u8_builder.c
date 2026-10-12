@@ -546,9 +546,8 @@ m3u8_builder_build_iframe_playlist(
 				request_context, &segment_durations, media_set, m3u8_builder_append_iframe_string, &ctx
 			);
 		} else {
-			// iframes list is not supported with encryption in mpeg-ts, since:
-			// 1. AES-128 - the IV of each key frame is not known in advance
-			// 2. SAMPLE-AES - the layout of the TS files is not known in advance due to emulation prevention
+			// iframes list is not supported with encryption in mpeg-ts, since with SAMPLE-AES the
+			// layout of the TS files is not known in advance due to emulation prevention
 			ts_encryption_params.type = HLS_ENC_NONE;
 			ts_encryption_params.key = NULL;
 			ts_encryption_params.iv = NULL;
