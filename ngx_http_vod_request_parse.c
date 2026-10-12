@@ -37,50 +37,6 @@ typedef struct {
 } ngx_http_vod_multi_uri_t;
 
 bool_t
-ngx_http_vod_parse_string(
-	const ngx_http_vod_match_definition_t* match_def, u_char* start_pos, u_char* end_pos, void* output
-) {
-	uint64_t value;
-	u_char* delim_pos;
-
-	for (;;) {
-		switch (match_def->match_type) {
-		case MATCH_END:
-			return start_pos == end_pos;
-
-		case MATCH_FIXED_STRING:
-			if (end_pos - start_pos < (ssize_t)match_def->string.len
-			    || ngx_memcmp(start_pos, match_def->string.data, match_def->string.len) != 0) {
-				return FALSE;
-			}
-
-			start_pos += match_def->string.len;
-			break;
-
-		case MATCH_NUMBER:
-			value = 0;
-			for (; start_pos < end_pos && *start_pos >= '0' && *start_pos <= '9'; start_pos++) {
-				value = value * 10 + *start_pos - '0';
-			}
-			*(uint64_t*)((u_char*)output + match_def->target_offset) = value;
-			break;
-
-		case MATCH_DELIM_STRING:
-			delim_pos = memchr(start_pos, match_def->delim, end_pos - start_pos);
-			if (delim_pos == NULL) {
-				return FALSE;
-			}
-
-			((ngx_str_t*)((u_char*)output + match_def->target_offset))->data = start_pos;
-			((ngx_str_t*)((u_char*)output + match_def->target_offset))->len = delim_pos - start_pos;
-			start_pos = delim_pos + 1;
-			break;
-		}
-		match_def++;
-	}
-}
-
-bool_t
 ngx_http_vod_split_uri_file_name(ngx_str_t* uri, int components, ngx_str_t* path, ngx_str_t* file_name) {
 	u_char* cur_pos;
 
@@ -102,17 +58,6 @@ ngx_http_vod_split_uri_file_name(ngx_str_t* uri, int components, ngx_str_t* path
 	}
 
 	return FALSE;
-}
-
-u_char*
-ngx_http_vod_extract_uint32_token_reverse(u_char* start_pos, u_char* end_pos, uint32_t* result) {
-	uint32_t multiplier;
-	uint32_t value = 0;
-	for (multiplier = 1; end_pos > start_pos && end_pos[-1] >= '0' && end_pos[-1] <= '9'; end_pos--, multiplier *= 10) {
-		value += (end_pos[-1] - '0') * multiplier;
-	}
-	*result = value;
-	return end_pos;
 }
 
 static u_char*
