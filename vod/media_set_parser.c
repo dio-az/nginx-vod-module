@@ -1834,59 +1834,6 @@ media_set_parse_notifications(
 }
 
 static vod_status_t
-media_set_init_look_ahead_segments(
-	request_context_t* request_context, media_set_t* media_set, get_clip_ranges_params_t* get_ranges_params
-) {
-	media_look_ahead_segment_t* cur_output;
-	get_clip_ranges_result_t clip_ranges;
-	vod_status_t rc;
-	uint32_t segment_index_limit;
-
-	cur_output = vod_alloc(request_context->pool, sizeof(cur_output[0]) * MAX_LOOK_AHEAD_SEGMENTS);
-	if (cur_output == NULL) {
-		vod_log_debug0(
-			VOD_LOG_DEBUG_LEVEL, request_context->log, 0, "media_set_init_look_ahead_segments: vod_alloc failed"
-		);
-		return VOD_ALLOC_FAILED;
-	}
-
-	media_set->look_ahead_segments = cur_output;
-
-	segment_index_limit = get_ranges_params->segment_index + MAX_LOOK_AHEAD_SEGMENTS;
-
-	while (get_ranges_params->segment_index < segment_index_limit) {
-		get_ranges_params->segment_index++;
-		rc = segmenter_get_start_end_ranges_no_discontinuity(get_ranges_params, &clip_ranges);
-		if (rc != VOD_OK) {
-			return rc;
-		}
-
-		if (clip_ranges.clip_count <= 0) {
-			if (!media_set->presentation_end) {
-				vod_log_error(
-					VOD_LOG_ERR,
-					request_context->log,
-					0,
-					"media_set_init_look_ahead_segments: failed to get look ahead segment"
-				);
-				return VOD_BAD_REQUEST;
-			}
-
-			break;
-		}
-
-		cur_output->start_time = clip_ranges.clip_time + clip_ranges.clip_ranges[0].start;
-		cur_output->duration = (media_set->timing.times[clip_ranges.max_clip_index]
-		                        + clip_ranges.clip_ranges[clip_ranges.clip_count - 1].end)
-		                     - cur_output->start_time;
-		cur_output++;
-	}
-
-	media_set->look_ahead_segment_count = cur_output - media_set->look_ahead_segments;
-	return VOD_OK;
-}
-
-static vod_status_t
 media_set_sum_key_frame_durations(
 	request_context_t* request_context,
 	vod_array_part_t* part,
@@ -2851,15 +2798,6 @@ media_set_parse_json(
 				if (rc != VOD_OK) {
 					return rc;
 				}
-
-				// initialize the look ahead segment times
-				if (result->type == MEDIA_SET_LIVE
-				    && (request_flags & REQUEST_FLAG_LOOK_AHEAD_SEGMENTS) != 0) {
-					rc = media_set_init_look_ahead_segments(request_context, result, &get_ranges_params);
-					if (rc != VOD_OK) {
-						return rc;
-					}
-				}
 			}
 
 			result->initial_segment_clip_relative_index =
@@ -2971,17 +2909,6 @@ media_set_parse_json(
 							result->live_window_duration,
 							params[MEDIA_SET_PARAM_LIVE_WINDOW_DURATION]->v.num.num
 						);
-					}
-				}
-
-				if ((request_flags & REQUEST_FLAG_LOOK_AHEAD_SEGMENTS) != 0) {
-					// increase the live window to compensate for the look ahead segments reduction
-					if (result->live_window_duration > 0) {
-						result->live_window_duration +=
-							segmenter->segment_duration * MAX_LOOK_AHEAD_SEGMENTS;
-					} else if (result->live_window_duration < 0) {
-						result->live_window_duration -=
-							segmenter->segment_duration * MAX_LOOK_AHEAD_SEGMENTS;
 					}
 				}
 
