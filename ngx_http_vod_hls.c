@@ -157,16 +157,13 @@ ngx_http_vod_hls_init_encryption_params(
 
 	sequence = &submodule_context->media_set.sequences[0];
 
-	if (conf->drm_enabled) {
-		drm_info = sequence->drm_info;
-		encryption_params->key = drm_info->key;
+	// encryption requires vod_drm_enabled
+	drm_info = sequence->drm_info;
+	encryption_params->key = drm_info->key;
 
-		if (drm_info->iv_set) {
-			encryption_params->iv = drm_info->iv;
-			return NGX_OK;
-		}
-	} else {
-		encryption_params->key = sequence->encryption_key;
+	if (drm_info->iv_set) {
+		encryption_params->iv = drm_info->iv;
+		return NGX_OK;
 	}
 
 	if (container_format != HLS_CONTAINER_FMP4) {
