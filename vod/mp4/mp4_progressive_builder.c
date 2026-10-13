@@ -472,6 +472,10 @@ mp4_progressive_build_header(
 	uint64_t total_data;
 	uint32_t mdat_header_size;
 	uint64_t mdat_box_size;
+	uint64_t actual_duration;
+	uint64_t track_duration;
+	uint32_t track_index;
+	uint32_t timescale;
 	u_char* buffer;
 	u_char* p;
 	vod_status_t rc;
@@ -484,6 +488,23 @@ mp4_progressive_build_header(
 	mp4_progressive_collect_stats(media_set, stats);
 	total_data = mp4_progressive_total_data_size(stats, media_set->total_track_count);
 	mdat_header_size = (total_data + 8 > 0xFFFFFFFFULL) ? 16 : 8;
+
+	// mp4_init_segment writes mvhd/tkhd/mdhd from media_set->timing.total_duration, but the sample
+	// tables (stts) come from the per-frame durations collected above. When a clip outlived its source
+	// the frames were capped shorter than the requested window, so the declared total would overshoot
+	// the samples and a player would report a longer duration than it can play back. Pin the movie
+	// duration to the longest track's real sample total so the header and the samples agree.
+	actual_duration = 0;
+	for (track_index = 0; track_index < media_set->total_track_count; track_index++) {
+		timescale = media_set->filtered_tracks[track_index].media_info.timescale;
+		track_duration = rescale_time(stats[track_index].total_duration, timescale, 1000);
+		if (track_duration > actual_duration) {
+			actual_duration = track_duration;
+		}
+	}
+	if (actual_duration != 0) {
+		media_set->timing.total_duration = actual_duration;
+	}
 
 	// build ftyp + moov with chunk offsets that account for the mdat header
 	rc = mp4_progressive_build_moov(request_context, media_set, mdat_header_size, NULL, &moov);
