@@ -5847,6 +5847,14 @@ ngx_http_vod_map_media_set_apply(ngx_http_vod_ctx_t* ctx, ngx_str_t* mapping, in
 		// still a single plain source, only the clip window / track selection is non-default
 		// (clipFrom, a clip duration, tracks) - progressive download applies those by byte
 		// range, the same way it already does for the clipfrom/clipto url params.
+
+		// except a clipFrom: the byte range starts on the exact clipFrom frame, so a clip opening
+		// mid-GOP keeps leading video frames whose key frame was cut away (undecodable) while the
+		// audio starts on time. The progressive path parses frames instead, and with
+		// vod_align_segments_to_key_frames every track starts on the same key frame - as multi-clip.
+		if (ctx->request == NULL && mapped_source->clip_from != 0) {
+			ctx->request = &progressive_download_request;
+		}
 	} else if (ctx->request == NULL) {
 		if (ngx_http_vod_is_progressive_multiclip_supported(&mapped_media_set)) {
 			// more than one clip in a progressive download: the single byte-range dump cannot
