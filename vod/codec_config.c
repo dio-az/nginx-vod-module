@@ -525,6 +525,44 @@ codec_config_get_av1_codec_name(request_context_t* request_context, media_info_t
 }
 
 static vod_status_t
+codec_config_get_vp9_codec_name(request_context_t* request_context, media_info_t* media_info) {
+	bit_reader_state_t reader;
+	uint32_t profile;
+	uint32_t level;
+	uint32_t bit_depth;
+	u_char* p;
+
+	bit_read_stream_init(&reader, media_info->extra_data.data, media_info->extra_data.len);
+
+	// same layout in vpcC versions 0 and 1
+	bit_read_stream_skip(&reader, 32); // version, flags
+	profile = bit_read_stream_get(&reader, 8);
+	level = bit_read_stream_get(&reader, 8);
+	bit_depth = bit_read_stream_get(&reader, 4);
+
+	if (reader.stream.eof_reached) {
+		vod_log_error(
+			VOD_LOG_ERR, request_context->log, 0, "codec_config_get_vp9_codec_name: overflow while parsing vp9 config"
+		);
+		return VOD_BAD_DATA;
+	}
+
+	p = vod_sprintf(
+		media_info->codec_name.data,
+		"%*s.%02uD.%02uD.%02uD",
+		(size_t)sizeof(uint32_t),
+		&media_info->format,
+		profile,
+		level,
+		bit_depth
+	);
+
+	media_info->codec_name.len = p - media_info->codec_name.data;
+
+	return VOD_OK;
+}
+
+static vod_status_t
 codec_config_get_dovi_codec_name(request_context_t* request_context, media_info_t* media_info) {
 	dovi_video_media_info_t* dovi;
 	u_char* p;
@@ -567,8 +605,7 @@ codec_config_get_video_codec_name(request_context_t* request_context, media_info
 		return VOD_OK;
 
 	case VOD_CODEC_ID_VP9:
-		codec_config_copy_string(media_info->codec_name, "vp9");
-		return VOD_OK;
+		return codec_config_get_vp9_codec_name(request_context, media_info);
 
 	case VOD_CODEC_ID_AV1:
 		return codec_config_get_av1_codec_name(request_context, media_info);
