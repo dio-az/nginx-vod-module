@@ -19,7 +19,6 @@ typedef struct {
 	buffer_pool_t* output_buffer_pool;
 	write_callback_t write_callback;
 	void* write_context;
-	bool_t reuse_buffers;
 
 	vod_queue_t buffers;
 	buffer_header_t* cur_write_buffer;
@@ -33,8 +32,7 @@ void write_buffer_queue_init(
 	write_buffer_queue_t* queue,
 	request_context_t* request_context,
 	write_callback_t write_callback,
-	void* write_context,
-	bool_t reuse_buffers
+	void* write_context
 );
 
 u_char*

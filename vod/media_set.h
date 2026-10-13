@@ -12,7 +12,6 @@
 #define INVALID_SEGMENT_TIME (LLONG_MAX)
 #define INVALID_CLIP_INDEX (UINT_MAX)
 
-#define MAX_LOOK_AHEAD_SEGMENTS (2)
 #define MAX_NOTIFICATIONS (1024)
 #define MAX_CLOSED_CAPTIONS (67)
 #define MAX_CLIPS (128)
@@ -108,11 +107,6 @@ typedef struct {
 } media_closed_captions_t;
 
 typedef struct {
-	uint64_t start_time;
-	uint32_t duration;
-} media_look_ahead_segment_t;
-
-typedef struct {
 	// initialized during parsing
 	struct segmenter_conf_s* segmenter_conf;
 	uint32_t version;
@@ -141,8 +135,6 @@ typedef struct {
 	uint64_t segment_start_time;
 	uint32_t segment_duration;
 	int64_t live_window_duration;
-	media_look_ahead_segment_t* look_ahead_segments;
-	uint32_t look_ahead_segment_count;
 
 	uint32_t initial_segment_index;
 	uint32_t initial_segment_clip_relative_index;

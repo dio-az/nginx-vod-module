@@ -4,22 +4,22 @@
 #include "ngx_http_vod_request_parse.h"
 #include "ngx_http_vod_submodule.h"
 #include "ngx_http_vod_utils.h"
-#include "vod/aes_defs.h"
 #include "vod/common.h"
 #include "vod/dash/dash_packager.h"
 #include "vod/hls/hls_muxer.h"
 #include "vod/hls/m3u8_builder.h"
 #include "vod/media_format.h"
 #include "vod/media_set.h"
-#include "vod/mp4/mp4_defs.h"
 #include "vod/mp4/mp4_fragment.h"
 #include "vod/mp4/mp4_init_segment.h"
 #include "vod/subtitle/webvtt_builder.h"
 #include "vod/udrm.h"
 
 #if (NGX_HAVE_OPENSSL_EVP)
+#include "vod/aes_defs.h"
 #include "vod/dash/edash_packager.h"
 #include "vod/mp4/mp4_cbcs_encrypt.h"
+#include "vod/mp4/mp4_defs.h"
 #include "vod/mp4/mp4_pssh.h"
 #endif // NGX_HAVE_OPENSSL_EVP
 
@@ -157,16 +157,13 @@ ngx_http_vod_hls_init_encryption_params(
 
 	sequence = &submodule_context->media_set.sequences[0];
 
-	if (conf->drm_enabled) {
-		drm_info = sequence->drm_info;
-		encryption_params->key = drm_info->key;
+	// encryption requires vod_drm_enabled
+	drm_info = sequence->drm_info;
+	encryption_params->key = drm_info->key;
 
-		if (drm_info->iv_set) {
-			encryption_params->iv = drm_info->iv;
-			return NGX_OK;
-		}
-	} else {
-		encryption_params->key = sequence->encryption_key;
+	if (drm_info->iv_set) {
+		encryption_params->iv = drm_info->iv;
+		return NGX_OK;
 	}
 
 	if (container_format != HLS_CONTAINER_FMP4) {

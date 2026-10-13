@@ -421,7 +421,7 @@ hls_muxer_init_segment(
 	}
 
 	// init the write queue
-	write_buffer_queue_init(&state->queue, request_context, write_callback, write_context, FALSE);
+	write_buffer_queue_init(&state->queue, request_context, write_callback, write_context);
 
 	rc = hls_muxer_init_base(
 		state, request_context, conf, encryption_params, segment_index, media_set, &simulation_supported, response_header

@@ -895,11 +895,6 @@ mp4_cenc_encrypt_video_get_fragment_writer(
 
 ////// audio fragment functions
 
-size_t
-mp4_cenc_encrypt_audio_get_auxiliary_data_size(mp4_cenc_encrypt_state_t* state) {
-	return MP4_AES_CTR_IV_SIZE * state->sequence->total_frame_count;
-}
-
 u_char*
 mp4_cenc_encrypt_audio_write_auxiliary_data(mp4_cenc_encrypt_state_t* state, u_char* p) {
 	u_char* end_pos = p + sizeof(state->iv) * state->sequence->total_frame_count;

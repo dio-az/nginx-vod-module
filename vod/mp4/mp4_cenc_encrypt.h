@@ -97,8 +97,6 @@ u_char* mp4_cenc_encrypt_video_write_saiz_saio(
 	mp4_cenc_encrypt_video_state_t* state, u_char* p, size_t auxiliary_data_offset
 );
 
-size_t mp4_cenc_encrypt_audio_get_auxiliary_data_size(mp4_cenc_encrypt_state_t* state);
-
 u_char* mp4_cenc_encrypt_audio_write_auxiliary_data(mp4_cenc_encrypt_state_t* state, u_char* p);
 
 u_char* mp4_cenc_encrypt_audio_write_saiz_saio(
