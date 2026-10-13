@@ -2834,6 +2834,15 @@ ngx_http_vod_update_track_timescale(
 		if (cur_frame >= last_frame) {
 			if (clip_end_dts != ULLONG_MAX) {
 				clip_end_dts = rescale_time(part->clip_to, 1000, new_timescale);
+				// When the source runs out before clip_to (the recording is shorter than the
+				// requested window), clip_end_dts sits past the last real frame. Stretching the
+				// last frame to fill it inflates the track duration past the footage that exists,
+				// so the moov reports more than there are samples and players stop short of the
+				// declared duration. Cap at the last frame's natural end: the clip simply lasts
+				// what was recorded.
+				if (clip_end_dts > scaled_dts) {
+					clip_end_dts = scaled_dts;
+				}
 				last_frame_dts = scaled_dts - cur_frame[-1].duration;
 
 				if (clip_end_dts > last_frame_dts) {
