@@ -25,7 +25,6 @@
 #include "vod/media_set_parser.h"
 #include "vod/mp4/mp4_format.h"
 #include "vod/segmenter.h"
-#include "vod/subtitle/cap_format.h"
 #include "vod/subtitle/webvtt_format.h"
 
 #if (NGX_HAVE_OPENSSL_EVP)
@@ -265,7 +264,6 @@ static media_format_t* media_formats[] = {
 #if (NGX_HAVE_LIBXML2)
 	&dfxp_format,
 #endif // NGX_HAVE_LIBXML2
-	&cap_format,
 	NULL,
 };
 

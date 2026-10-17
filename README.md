@@ -25,7 +25,6 @@
   - WebVTT
   - SRT
   - DFXP/TTML (requires `libxml2`)
-  - CAP (Cheetah)
 
   Output:
 
