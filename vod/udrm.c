@@ -23,7 +23,7 @@ enum {
 static json_object_key_def_t drm_info_keys_def[] = {
 	{vod_string("iv"), VOD_JSON_STRING, DRM_INFO_PARAM_IV},
 	{vod_string("key"), VOD_JSON_STRING, DRM_INFO_PARAM_KEY},
-	{vod_string("key_id"), VOD_JSON_STRING, DRM_INFO_PARAM_KEY_ID},
+	{vod_string("keyId"), VOD_JSON_STRING, DRM_INFO_PARAM_KEY_ID},
 	{vod_string("pssh"), VOD_JSON_ARRAY, DRM_INFO_PARAM_PSSH},
 	{vod_null_string, 0, 0},
 };
@@ -80,7 +80,7 @@ udrm_parse_response(
 
 	if (drm_info_values[DRM_INFO_PARAM_KEY] == NULL || drm_info_values[DRM_INFO_PARAM_KEY_ID] == NULL) {
 		vod_log_error(
-			VOD_LOG_ERR, request_context->log, 0, "udrm_parse_response: missing fields, \"key\", \"key_id\" are mandatory"
+			VOD_LOG_ERR, request_context->log, 0, "udrm_parse_response: missing fields, \"key\", \"keyId\" are mandatory"
 		);
 		return VOD_BAD_DATA;
 	}
