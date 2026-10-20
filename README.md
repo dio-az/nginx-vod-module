@@ -590,7 +590,7 @@ Optional fields:
 - `bitrate` - an object that can be used to set the bitrate for the different media types,
   in bits per second. For example, `{"v": 900000, "a": 64000}`. If the bitrate is not supplied,
   `nginx-vod-module` will estimate it based on the last clip in the sequence.
-- `avg_bitrate` - an object that can be used to set the average bitrate for the different media
+- `avgBitrate` - an object that can be used to set the average bitrate for the different media
   types, in bits per second. See `bitrate` above for a sample object. If specified, the module will
   use the value to populate the `AVERAGE-BANDWIDTH` attribute of `#EXT-X-STREAM-INF` in HLS.
 
@@ -815,7 +815,7 @@ more scalable architecture would be to use proxy servers or a CDN in order to ca
 segments.
 
 In order to perform the encryption, `nginx-vod-module` needs several parameters, including `key` and
-`key_id`, these parameters are fetched from an external server via HTTP GET requests. The
+`keyId`, these parameters are fetched from an external server via HTTP GET requests. The
 [`vod_drm_upstream_location`](#vod_drm_upstream_location) parameter specifies an NGINX `location`
 that is used to access the DRM server, and the request URI is configured using
 [`vod_drm_request_uri`](#vod_drm_request_uri) (this parameter can include
@@ -831,7 +831,7 @@ that is used to access the DRM server, and the request URI is configured using
       }
     ],
     "key": "GzoNU9Dfwc//Iq3/zbzMUw==",
-    "key_id": "YzJmODYxNzM3Y2M0ZjM4Mg=="
+    "keyId": "YzJmODYxNzM3Y2M0ZjM4Mg=="
   }
 ]
 ```
@@ -840,7 +840,7 @@ that is used to access the DRM server, and the request URI is configured using
 - `pssh.uuid` - the DRM system UUID, in this case, `edef8ba9-79d6-4ace-a3c8-27dcd51d21ed` stands for
   Widevine.
 - `key` - base64 encoded encryption key (128 bit).
-- `key_id` - base64 encoded key identifier (128 bit).
+- `keyId` - base64 encoded key identifier (128 bit).
 - `iv` - **optional** base64 encoded initialization vector (128 bit). The IV is currently used only
   in HLS (FairPlay), in the other protocols an IV is automatically generated.
 
