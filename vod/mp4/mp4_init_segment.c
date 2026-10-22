@@ -258,7 +258,11 @@ static const u_char fixed_stbl_atoms[] = {
 
 static void
 mp4_init_segment_get_track_sizes(
-	media_set_t* media_set, media_track_t* cur_track, atom_writer_t* stsd_atom_writer, track_sizes_t* result
+	media_set_t* media_set,
+	media_track_t* cur_track,
+	atom_writer_t* stsd_atom_writer,
+	atom_writer_t* stbl_atom_writer,
+	track_sizes_t* result
 ) {
 	uint32_t timescale = media_set->filtered_tracks->media_info.timescale;
 	size_t tkhd_atom_size;
@@ -282,7 +286,10 @@ mp4_init_segment_get_track_sizes(
 		mdhd_atom_size = ATOM_HEADER_SIZE + sizeof(mdhd_atom_t);
 	}
 
-	result->stbl_size = ATOM_HEADER_SIZE + result->stsd_size + sizeof(fixed_stbl_atoms);
+	result->stbl_size =
+		ATOM_HEADER_SIZE
+		+ result->stsd_size
+		+ (stbl_atom_writer != NULL ? stbl_atom_writer->atom_size : sizeof(fixed_stbl_atoms));
 	result->minf_size = ATOM_HEADER_SIZE + sizeof(dinf_atom) + result->stbl_size;
 	switch (cur_track->media_info.media_type) {
 	case MEDIA_TYPE_VIDEO:
@@ -675,16 +682,22 @@ mp4_init_segment_calc_size(
 	media_set_t* media_set,
 	atom_writer_t* extra_moov_atoms_writer,
 	atom_writer_t* stsd_atom_writers,
+	atom_writer_t* stbl_atom_writers,
+	bool_t no_mvex,
 	init_mp4_sizes_t* result
 ) {
 	media_track_t* first_track = media_set->filtered_tracks;
 	atom_writer_t* stsd_atom_writer;
+	atom_writer_t* stbl_atom_writer;
 	track_sizes_t* track_sizes;
 	uint32_t timescale = first_track->media_info.timescale;
 	uint32_t i;
 
+	// mvex/trex declare fragments; a non-fragmented (progressive) moov must omit them
 	result->mvex_atom_size =
-		ATOM_HEADER_SIZE + (ATOM_HEADER_SIZE + sizeof(trex_atom_t)) * media_set->total_track_count;
+		no_mvex ? 0
+				: ATOM_HEADER_SIZE
+					  + (ATOM_HEADER_SIZE + sizeof(trex_atom_t)) * media_set->total_track_count;
 
 	result->moov_atom_size = ATOM_HEADER_SIZE + result->mvex_atom_size;
 
@@ -708,7 +721,15 @@ mp4_init_segment_calc_size(
 			stsd_atom_writer = NULL;
 		}
 
-		mp4_init_segment_get_track_sizes(media_set, &first_track[i], stsd_atom_writer, track_sizes);
+		if (stbl_atom_writers != NULL && stbl_atom_writers[i].write != NULL) {
+			stbl_atom_writer = &stbl_atom_writers[i];
+		} else {
+			stbl_atom_writer = NULL;
+		}
+
+		mp4_init_segment_get_track_sizes(
+			media_set, &first_track[i], stsd_atom_writer, stbl_atom_writer, track_sizes
+		);
 
 		result->moov_atom_size += track_sizes->trak_size;
 	}
@@ -723,7 +744,9 @@ mp4_init_segment_write(
 	media_set_t* media_set,
 	init_mp4_sizes_t* sizes,
 	atom_writer_t* extra_moov_atoms_writer,
-	atom_writer_t* stsd_atom_writers
+	atom_writer_t* stsd_atom_writers,
+	atom_writer_t* stbl_atom_writers,
+	bool_t no_mvex
 ) {
 	media_track_t* first_track = media_set->filtered_tracks;
 	media_track_t* cur_track;
@@ -751,12 +774,14 @@ mp4_init_segment_write(
 		p = mp4_init_segment_write_mvhd_atom(p, timescale, duration);
 	}
 
-	// moov.mvex
-	write_atom_header(p, sizes->mvex_atom_size, 'm', 'v', 'e', 'x');
+	// moov.mvex (omitted for a non-fragmented / progressive moov)
+	if (!no_mvex) {
+		write_atom_header(p, sizes->mvex_atom_size, 'm', 'v', 'e', 'x');
 
-	for (i = 0; i < media_set->total_track_count; i++) {
-		// moov.mvex.trex
-		p = mp4_init_segment_write_trex_atom(p, i + 1);
+		for (i = 0; i < media_set->total_track_count; i++) {
+			// moov.mvex.trex
+			p = mp4_init_segment_write_trex_atom(p, i + 1);
+		}
 	}
 
 	for (i = 0; i < media_set->total_track_count; i++) {
@@ -834,7 +859,11 @@ mp4_init_segment_write(
 		} else {
 			p = mp4_copy_atom(p, cur_track->raw_atoms[RTA_STSD]);
 		}
-		p = vod_copy(p, fixed_stbl_atoms, sizeof(fixed_stbl_atoms));
+		if (stbl_atom_writers != NULL && stbl_atom_writers[i].write != NULL) {
+			p = stbl_atom_writers[i].write(stbl_atom_writers[i].context, p);
+		} else {
+			p = vod_copy(p, fixed_stbl_atoms, sizeof(fixed_stbl_atoms));
+		}
 	}
 
 	// moov.xxx
@@ -878,12 +907,14 @@ mp4_init_segment_build_stsd_atom(request_context_t* request_context, media_track
 }
 
 vod_status_t
-mp4_init_segment_build(
+mp4_init_segment_build_ex(
 	request_context_t* request_context,
 	media_set_t* media_set,
 	bool_t size_only,
 	atom_writer_t* extra_moov_atoms_writer,
 	atom_writer_t* stsd_atom_writers,
+	atom_writer_t* stbl_atom_writers,
+	bool_t no_mvex,
 	vod_str_t* result
 ) {
 	media_track_t* first_track = media_set->filtered_tracks;
@@ -917,7 +948,9 @@ mp4_init_segment_build(
 		return VOD_ALLOC_FAILED;
 	}
 
-	mp4_init_segment_calc_size(media_set, extra_moov_atoms_writer, stsd_atom_writers, sizes);
+	mp4_init_segment_calc_size(
+		media_set, extra_moov_atoms_writer, stsd_atom_writers, stbl_atom_writers, no_mvex, sizes
+	);
 
 	// head request optimization
 	if (size_only) {
@@ -936,7 +969,14 @@ mp4_init_segment_build(
 
 	// write the init mp4
 	p = mp4_init_segment_write(
-		result->data, request_context, media_set, sizes, extra_moov_atoms_writer, stsd_atom_writers
+		result->data,
+		request_context,
+		media_set,
+		sizes,
+		extra_moov_atoms_writer,
+		stsd_atom_writers,
+		stbl_atom_writers,
+		no_mvex
 	);
 
 	result->len = p - result->data;
@@ -954,6 +994,21 @@ mp4_init_segment_build(
 	}
 
 	return VOD_OK;
+}
+
+vod_status_t
+mp4_init_segment_build(
+	request_context_t* request_context,
+	media_set_t* media_set,
+	bool_t size_only,
+	atom_writer_t* extra_moov_atoms_writer,
+	atom_writer_t* stsd_atom_writers,
+	vod_str_t* result
+) {
+	// default behaviour: empty sample tables + mvex/trex (fragmented init segment)
+	return mp4_init_segment_build_ex(
+		request_context, media_set, size_only, extra_moov_atoms_writer, stsd_atom_writers, NULL, FALSE, result
+	);
 }
 
 // encryption
