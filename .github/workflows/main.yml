@@ -157,3 +157,17 @@ jobs:
           ./json_parser_test
           ./parse_utils/build.sh
           ./parse_utils_test
+
+  docker:
+    name: Build docker image (${{ matrix.arch }})
+    runs-on: ubuntu-26.04${{ matrix.arch == 'arm64' && '-arm' || '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - amd64
+          - arm64
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker build --target runtime --build-arg RELEASE=1 -t nginx-vod-module .
+      - run: docker run --rm nginx-vod-module -t
