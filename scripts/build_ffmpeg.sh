@@ -7,8 +7,6 @@
 	--disable-avdevice \
 	--disable-avformat \
 	--enable-shared \
-	--enable-gpl \
-	--enable-nonfree \
 	--enable-libfdk-aac \
 	--disable-everything \
 	--enable-filter=volume,amix,atempo \

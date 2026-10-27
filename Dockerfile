@@ -11,9 +11,9 @@ RUN apk --no-cache add \
 		zlib-dev \
 		pcre2-dev \
 		libxml2-dev \
+		openssl-dev \
 		nasm \
-		fdk-aac-dev \
-		openssl-dev
+		fdk-aac-dev
 
 COPY scripts/fetch_latest.sh scripts/build_ffmpeg.sh /usr/local/bin/
 
@@ -28,36 +28,24 @@ COPY --exclude=sample --exclude=static . /nginx-vod-module
 
 WORKDIR /nginx
 
-RUN /nginx-vod-module/scripts/build_basic.sh \
-		--without-http_charset_module \
-		--without-http_ssi_module \
-		--without-http_userid_module \
-		--without-http_auth_basic_module \
-		--without-http_mirror_module \
-		--without-http_autoindex_module \
-		--without-http_geo_module \
-		--without-http_split_clients_module \
-		--without-http_referer_module \
-		--without-http_fastcgi_module \
-		--without-http_uwsgi_module \
-		--without-http_scgi_module \
-		--without-http_grpc_module \
-		--without-http_memcached_module \
-		--without-http_limit_conn_module \
-		--without-http_limit_req_module \
-		--without-http_empty_gif_module \
-		--without-http_browser_module \
-		--without-http_upstream_hash_module \
-		--without-http_upstream_ip_hash_module \
-		--without-http_upstream_random_module \
-		--with-debug \
+ARG TARGETARCH
+ARG RELEASE
+ARG CC_OPT
+
+RUN case $TARGETARCH in amd64) : ${CC_OPT:=-mpopcnt}; esac \
+	&& /nginx-vod-module/scripts/build_basic.sh \
+		$([ -n "$RELEASE" ] || echo --with-debug) \
+		--with-compat \
+		--with-http_v2_module \
+		--with-http_v3_module \
+		--with-http_realip_module \
 		--with-http_stub_status_module \
 		--add-module=/nginx-vod-module \
-		--with-cc-opt='-O0 -I/opt/ffmpeg/include' \
-		--with-ld-opt='-L/opt/ffmpeg/lib -Wl,-rpath,/opt/ffmpeg/lib' \
+		--with-cc-opt="-O0 ${RELEASE:+-O3} -fstack-clash-protection -Wformat -Werror=format-security $CC_OPT -I/opt/ffmpeg/include" \
+		--with-ld-opt="-L/opt/ffmpeg/lib -Wl,-rpath,/opt/ffmpeg/lib,--as-needed ${RELEASE:+-s}" \
 	&& make install
 
-FROM alpine:3.24
+FROM alpine:3.24 AS runtime
 
 LABEL maintainer="Diogo Azevedo <hi@dio-az.dev>"
 
@@ -65,18 +53,26 @@ RUN apk --no-cache add \
 		zlib \
 		pcre2 \
 		libxml2 \
+		libssl3 \
+		libcrypto3 \
 		fdk-aac \
-		openssl \
+		fdk-aac-doc \
 		ca-certificates \
 	&& mkdir /var/spool/nginx
 
 COPY --from=build /opt/ffmpeg/lib /opt/ffmpeg/lib
 COPY --from=build /opt/nginx /opt/nginx
-COPY static/* /opt/nginx/html/
-COPY sample/* /opt/nginx/conf/
+COPY --from=build --parents /nginx/LICENSE /ffmpeg/COPYING.LGPLv2.1 /nginx-vod-module/LICENSE /usr/share/licenses/
 
-EXPOSE 8000
+STOPSIGNAL SIGQUIT
 
 ENTRYPOINT ["/opt/nginx/sbin/nginx"]
 
 CMD ["-g", "daemon off;"]
+
+FROM runtime AS quickstart
+
+COPY static/* /opt/nginx/html/
+COPY sample/* /opt/nginx/conf/
+
+EXPOSE 8000
