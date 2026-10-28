@@ -154,6 +154,20 @@ Watch the demo content in your browser by visiting
 > [`tears-of-steel.zip`](https://media-sample-storage.s3.eu-central-1.amazonaws.com/tears-of-steel.zip)
 > and extract them at `demo/storage/tears-of-steel`.
 
+### Docker image
+
+Release images are available at `ghcr.io/dio-az/nginx-vod-module`. Use them as a base and add your
+configuration, for example:
+
+```dockerfile
+FROM ghcr.io/dio-az/nginx-vod-module
+
+COPY nginx.conf /opt/nginx/conf/
+```
+
+> [!NOTE]
+> Tags may change to pick up patches. Pin the image digest for immutability.
+
 ### URL structure
 
 #### Basic URL structure
