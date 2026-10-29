@@ -21,7 +21,7 @@ jobs:
       ffmpeg: ${{ steps.resolve.outputs.ffmpeg }}
       build: ${{ steps.resolve.outputs.build }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - id: resolve
         run: ./scripts/build_matrix.py >> "$GITHUB_OUTPUT"
 
@@ -35,12 +35,12 @@ jobs:
     steps:
       - run: sudo apt-get update -qq
       - run: sudo apt-get install -y --no-install-recommends wget ca-certificates
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: nginx-vod-module
       - run: ./nginx-vod-module/scripts/fetch_latest.sh ${{ matrix.url }} ${{ matrix.package }}-${{ matrix.version }}
       - run: tar -cf ${{ matrix.package }}-source.tar ${{ matrix.package }}
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ matrix.package }}-source-${{ matrix.version }}
           path: ${{ matrix.package }}-source.tar
@@ -64,15 +64,15 @@ jobs:
             libfdk-aac-dev \
             nasm \
             pkg-config
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: nginx-vod-module
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ffmpeg-source-${{ matrix.ffmpeg-version }}
       - run: tar -xf ffmpeg-source.tar
       - id: ffmpeg-cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ffmpeg-build
           key: ffmpeg-${{ matrix.ffmpeg-version }}-ubuntu-${{ matrix.ubuntu-version }}-${{ matrix.arch }}-${{ hashFiles('ffmpeg/**', 'nginx-vod-module/scripts/build_ffmpeg.sh') }}
@@ -82,7 +82,7 @@ jobs:
           ../nginx-vod-module/scripts/build_ffmpeg.sh --prefix=/usr/local
           make install DESTDIR=$GITHUB_WORKSPACE/ffmpeg-build
       - run: tar -cf ffmpeg-build.tar -C ffmpeg-build .
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ffmpeg-build-${{ matrix.ffmpeg-version }}-${{ matrix.arch }}
           path: ffmpeg-build.tar
@@ -109,7 +109,7 @@ jobs:
             libxml2-dev \
             libpcre2-dev \
             zlib1g-dev
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: nginx-vod-module
       - if: matrix.ffmpeg-version == 'distro'
@@ -119,14 +119,14 @@ jobs:
             libavfilter-dev \
             libswscale-dev
       - if: matrix.ffmpeg-version && matrix.ffmpeg-version != 'distro'
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ffmpeg-build-${{ matrix.ffmpeg-version }}-${{ matrix.arch }}
       - if: matrix.ffmpeg-version && matrix.ffmpeg-version != 'distro'
         run: |
           sudo tar -xf ffmpeg-build.tar -C /
           sudo ldconfig
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ${{ matrix.server }}-source-${{ matrix.server-version }}
       - run: tar -xf ${{ matrix.server }}-source.tar
@@ -168,6 +168,6 @@ jobs:
           - amd64
           - arm64
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: docker build --target runtime --build-arg RELEASE=1 -t nginx-vod-module .
       - run: docker run --rm nginx-vod-module -t

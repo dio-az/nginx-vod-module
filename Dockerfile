@@ -43,7 +43,8 @@ RUN case $TARGETARCH in amd64) : ${CC_OPT:=-mpopcnt}; esac \
 		--add-module=/nginx-vod-module \
 		--with-cc-opt="-O0 ${RELEASE:+-O3} -fstack-clash-protection -Wformat -Werror=format-security $CC_OPT -I/opt/ffmpeg/include" \
 		--with-ld-opt="-L/opt/ffmpeg/lib -Wl,-rpath,/opt/ffmpeg/lib,--as-needed ${RELEASE:+-s}" \
-	&& make install
+	&& make install \
+	&& rm /opt/nginx/conf/*.default /opt/nginx/conf/koi-* /opt/nginx/conf/win-utf
 
 FROM alpine:3.24 AS runtime
 
@@ -60,7 +61,7 @@ RUN apk --no-cache add \
 		ca-certificates \
 	&& mkdir /var/spool/nginx
 
-COPY --from=build /opt/ffmpeg/lib /opt/ffmpeg/lib
+COPY --from=build --exclude=pkgconfig --exclude=*.so /opt/ffmpeg/lib /opt/ffmpeg/lib
 COPY --from=build /opt/nginx /opt/nginx
 COPY --from=build --parents /nginx/LICENSE /ffmpeg/COPYING.LGPLv2.1 /nginx-vod-module/LICENSE /usr/share/licenses/
 

@@ -1,0 +1,28 @@
+name: Release
+
+on:
+  release:
+    types:
+      - released
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+  attestations: write
+
+jobs:
+  stable:
+    name: NGINX stable
+    uses: ./.github/workflows/docker.yml
+    with:
+      nginx-version: '1.30'
+      ffmpeg-version: '8.1'
+      promote: true
+
+  mainline:
+    name: NGINX mainline
+    uses: ./.github/workflows/docker.yml
+    with:
+      nginx-version: '1.31'
+      ffmpeg-version: '9.0'
