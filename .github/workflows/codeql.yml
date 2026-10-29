@@ -35,11 +35,11 @@ jobs:
             libxml2-dev \
             wget \
             zlib1g-dev
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: nginx-vod-module
       - run: ./nginx-vod-module/scripts/fetch_latest.sh nginx.org/download "nginx-$NGINX_VERSION"
-      - uses: github/codeql-action/init@v4
+      - uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           languages: c-cpp
           build-mode: manual
@@ -54,7 +54,7 @@ jobs:
           grep NGX_HAVE_LIB_AV_FILTER objs/ngx_auto_config.h
           grep NGX_HAVE_LIB_SW_SCALE objs/ngx_auto_config.h
           grep NGX_HAVE_LIBXML2 objs/ngx_auto_config.h
-      - uses: github/codeql-action/analyze@v4
+      - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           category: language:c-cpp
           checkout_path: nginx-vod-module
@@ -63,12 +63,12 @@ jobs:
     name: Analyze actions
     runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v7
-      - uses: github/codeql-action/init@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           languages: actions
           build-mode: none
           config-file: .github/codeql/codeql-config.yml
-      - uses: github/codeql-action/analyze@v4
+      - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           category: language:actions
