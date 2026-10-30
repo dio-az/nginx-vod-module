@@ -90,7 +90,7 @@ jobs:
           tags="-t $variant"
           if ${{ inputs.promote }}; then
             latest=$(gh api repos/$GITHUB_REPOSITORY/releases/latest --jq .tag_name)
-            tags="$tags -t $version"
+            tags="$tags -t $version -t ${version%.*} -t ${version%.*.*}"
             if [ $latest = $GITHUB_REF_NAME ]; then
               tags="$tags -t $IMAGE:latest"
             fi
