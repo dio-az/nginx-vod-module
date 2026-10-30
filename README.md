@@ -167,7 +167,7 @@ Release images are available at `ghcr.io/dio-az/nginx-vod-module`. Use them as a
 configuration, for example:
 
 ```dockerfile
-FROM ghcr.io/dio-az/nginx-vod-module
+FROM ghcr.io/dio-az/nginx-vod-module:1
 
 COPY nginx.conf /opt/nginx/conf/
 ```
