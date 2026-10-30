@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.0](https://github.com/dio-az/nginx-vod-module/compare/v1.10.1...v1.11.0) (2026-10-30)
+
+### Features
+
+- Publish Docker images to GHCR ([#172](https://github.com/dio-az/nginx-vod-module/pull/172))
+- Prepare Docker image for publishing ([#171](https://github.com/dio-az/nginx-vod-module/pull/171))
+
 ## [1.10.1](https://github.com/dio-az/nginx-vod-module/compare/v1.10.0...v1.10.1) (2026-10-06)
 
 ### Bug Fixes
