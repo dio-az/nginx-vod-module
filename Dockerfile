@@ -36,10 +36,13 @@ RUN case $TARGETARCH in amd64) : ${CC_OPT:=-mpopcnt}; esac \
 	&& /nginx-vod-module/scripts/build_basic.sh \
 		$([ -n "$RELEASE" ] || echo --with-debug) \
 		--with-compat \
+		--with-http_auth_request_module \
+		--with-http_realip_module \
+		--with-http_secure_link_module \
+		--with-http_slice_module \
+		--with-http_stub_status_module \
 		--with-http_v2_module \
 		--with-http_v3_module \
-		--with-http_realip_module \
-		--with-http_stub_status_module \
 		--add-module=/nginx-vod-module \
 		--with-cc-opt="-O0 ${RELEASE:+-O3} -fstack-clash-protection -Wformat -Werror=format-security $CC_OPT -I/opt/ffmpeg/include" \
 		--with-ld-opt="-L/opt/ffmpeg/lib -Wl,-rpath,/opt/ffmpeg/lib,--as-needed ${RELEASE:+-s}" \
