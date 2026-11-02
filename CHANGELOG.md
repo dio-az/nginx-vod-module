@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.2](https://github.com/dio-az/nginx-vod-module/compare/v1.11.1...v1.11.2) (2026-11-02)
+
+### Bug Fixes
+
+- Add missing modules to Docker image ([#176](https://github.com/dio-az/nginx-vod-module/pull/176))
+
 ## [1.11.1](https://github.com/dio-az/nginx-vod-module/compare/v1.11.0...v1.11.1) (2026-10-30)
 
 ### Bug Fixes
