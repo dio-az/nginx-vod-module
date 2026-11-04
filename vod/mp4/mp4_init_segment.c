@@ -430,7 +430,7 @@ mp4_init_segment_write_tkhd64_atom(
 }
 
 static u_char*
-mp4_init_segment_write_mdhd_atom(u_char* p, uint32_t timescale, uint32_t duration) {
+mp4_init_segment_write_mdhd_atom(u_char* p, uint32_t timescale, uint32_t duration, uint16_t language) {
 	size_t atom_size = ATOM_HEADER_SIZE + sizeof(mdhd_atom_t);
 
 	write_atom_header(p, atom_size, 'm', 'd', 'h', 'd');
@@ -439,13 +439,13 @@ mp4_init_segment_write_mdhd_atom(u_char* p, uint32_t timescale, uint32_t duratio
 	write_be32(p, 0); // modification_time
 	write_be32(p, timescale);
 	write_be32(p, duration);
-	write_be16(p, 0); // language
+	write_be16(p, language);
 	write_be16(p, 0); // reserved
 	return p;
 }
 
 static u_char*
-mp4_init_segment_write_mdhd64_atom(u_char* p, uint32_t timescale, uint64_t duration) {
+mp4_init_segment_write_mdhd64_atom(u_char* p, uint32_t timescale, uint64_t duration, uint16_t language) {
 	size_t atom_size = ATOM_HEADER_SIZE + sizeof(mdhd64_atom_t);
 
 	write_atom_header(p, atom_size, 'm', 'd', 'h', 'd');
@@ -454,7 +454,7 @@ mp4_init_segment_write_mdhd64_atom(u_char* p, uint32_t timescale, uint64_t durat
 	write_be64(p, 0LL); // modification_time
 	write_be32(p, timescale);
 	write_be64(p, duration);
-	write_be16(p, 0); // language
+	write_be16(p, language);
 	write_be16(p, 0); // reserved
 	return p;
 }
@@ -730,6 +730,7 @@ mp4_init_segment_write(
 	track_sizes_t* track_sizes;
 	uint32_t timescale = first_track->media_info.timescale;
 	uint64_t duration;
+	uint16_t language;
 	uint32_t i;
 
 	if (media_set->type == MEDIA_SET_LIVE) {
@@ -791,10 +792,11 @@ mp4_init_segment_write(
 		write_atom_header(p, track_sizes->mdia_size, 'm', 'd', 'i', 'a');
 
 		// moov.trak.mdia.mdhd
+		language = iso639_3_str_to_int(lang_get_iso639_3_name(cur_track->media_info.tags.language));
 		if (duration > UINT_MAX) {
-			p = mp4_init_segment_write_mdhd64_atom(p, timescale, duration);
+			p = mp4_init_segment_write_mdhd64_atom(p, timescale, duration, language);
 		} else {
-			p = mp4_init_segment_write_mdhd_atom(p, timescale, duration);
+			p = mp4_init_segment_write_mdhd_atom(p, timescale, duration, language);
 		}
 
 		// moov.trak.mdia.hdlr
