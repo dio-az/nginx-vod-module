@@ -1624,7 +1624,7 @@ dash_packager_get_earliest_pres_time(media_set_t* media_set, media_track_t* trac
 }
 
 static u_char*
-dash_packager_write_sidx_atom(u_char* p, sidx_params_t* sidx_params, uint32_t reference_size) {
+dash_packager_write_sidx_atom(u_char* p, sidx_params_t* sidx_params, u_char** reference_size) {
 	size_t atom_size = ATOM_HEADER_SIZE + sizeof(sidx_atom_t);
 
 	write_atom_header(p, atom_size, 's', 'i', 'd', 'x');
@@ -1635,14 +1635,15 @@ dash_packager_write_sidx_atom(u_char* p, sidx_params_t* sidx_params, uint32_t re
 	write_be32(p, 0);                                  // first_offset
 	write_be16(p, 0);                                  // reserved
 	write_be16(p, 1);                                  // reference_count
-	write_be32(p, reference_size);                     // reference_type(1), referenced_size(31)
+	*reference_size = p;                               // HACK: reference_size known at later stage
+	write_be32(p, 0);                                  // reference_type(1), referenced_size(31)
 	write_be32(p, sidx_params->total_frames_duration); // subsegment_duration
 	write_be32(p, 0x90000000); // starts_with_SAP(1) = 1, SAP_type(3) = 1, SAP_delta_time(28) = 0
 	return p;
 }
 
 static u_char*
-dash_packager_write_sidx64_atom(u_char* p, sidx_params_t* sidx_params, uint32_t reference_size) {
+dash_packager_write_sidx64_atom(u_char* p, sidx_params_t* sidx_params, u_char** reference_size) {
 	size_t atom_size = ATOM_HEADER_SIZE + sizeof(sidx64_atom_t);
 
 	write_atom_header(p, atom_size, 's', 'i', 'd', 'x');
@@ -1653,7 +1654,8 @@ dash_packager_write_sidx64_atom(u_char* p, sidx_params_t* sidx_params, uint32_t 
 	write_be64(p, 0LL);                                // first_offset
 	write_be16(p, 0);                                  // reserved
 	write_be16(p, 1);                                  // reference_count
-	write_be32(p, reference_size);                     // reference_type(1), referenced_size(31)
+	*reference_size = p;                               // HACK: reference_size known at later stage
+	write_be32(p, 0);                                  // reference_type(1), referenced_size(31)
 	write_be32(p, sidx_params->total_frames_duration); // subsegment_duration
 	write_be32(p, 0x90000000); // starts_with_SAP(1) = 1, SAP_type(3) = 1, SAP_delta_time(28) = 0
 	return p;
@@ -1870,6 +1872,7 @@ dash_packager_build_fragment_header(
 	u_char* mdat_start;
 	u_char* p;
 	u_char* sample_size;
+	u_char* reference_size;
 
 	// calculate sizes
 	dash_packager_init_sidx_params(media_set, sequence, &sidx_params);
@@ -1913,9 +1916,9 @@ dash_packager_build_fragment_header(
 
 	// sidx
 	if (sidx_params.earliest_pres_time > UINT_MAX) {
-		p = dash_packager_write_sidx64_atom(p, &sidx_params, moof_atom_size + mdat_atom_size);
+		p = dash_packager_write_sidx64_atom(p, &sidx_params, &reference_size);
 	} else {
-		p = dash_packager_write_sidx_atom(p, &sidx_params, moof_atom_size + mdat_atom_size);
+		p = dash_packager_write_sidx_atom(p, &sidx_params, &reference_size);
 	}
 
 	// moof
@@ -1977,6 +1980,9 @@ dash_packager_build_fragment_header(
 			write_be32(sample_size, mdat_atom_size - ATOM_HEADER_SIZE); // HACK: write subtitle size
 		}
 	}
+
+	// NOTE: the mdat size is final only at this point
+	write_be32(reference_size, moof_atom_size + mdat_atom_size); // HACK: write reference size
 
 	result->len = p - result->data;
 
