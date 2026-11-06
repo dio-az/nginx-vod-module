@@ -83,6 +83,6 @@ vod_status_t mp4_fragment_frame_writer_init(
 
 vod_status_t mp4_fragment_frame_writer_process(fragment_writer_state_t* state);
 
-void mp4_fragment_get_content_type(bool_t video, vod_str_t* content_type);
+void mp4_fragment_get_content_type(media_set_t* media_set, vod_str_t* content_type);
 
 #endif // __MP4_FRAGMENT_H__

@@ -348,10 +348,12 @@ mp4_fragment_frame_writer_process(fragment_writer_state_t* state) {
 }
 
 void
-mp4_fragment_get_content_type(bool_t video, vod_str_t* content_type) {
-	if (video) {
+mp4_fragment_get_content_type(media_set_t* media_set, vod_str_t* content_type) {
+	if (media_set->track_count[MEDIA_TYPE_VIDEO] > 0) {
 		vod_str_set(content_type, "video/mp4");
-	} else {
+	} else if (media_set->track_count[MEDIA_TYPE_AUDIO] > 0) {
 		vod_str_set(content_type, "audio/mp4");
+	} else {
+		vod_str_set(content_type, "application/mp4");
 	}
 }
