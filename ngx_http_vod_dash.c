@@ -180,7 +180,7 @@ ngx_http_vod_dash_mp4_handle_init_segment(
 		return ngx_http_vod_status_to_ngx_error(submodule_context->r, rc);
 	}
 
-	mp4_fragment_get_content_type(submodule_context->media_set.track_count[MEDIA_TYPE_VIDEO], content_type);
+	mp4_fragment_get_content_type(&submodule_context->media_set, content_type);
 	return NGX_OK;
 }
 
@@ -296,7 +296,7 @@ ngx_http_vod_dash_mp4_init_frame_processor(
 	}
 
 	// set the 'Content-type' header
-	mp4_fragment_get_content_type(submodule_context->media_set.track_count[MEDIA_TYPE_VIDEO], content_type);
+	mp4_fragment_get_content_type(&submodule_context->media_set, content_type);
 	return NGX_OK;
 }
 
@@ -467,7 +467,7 @@ ngx_http_vod_dash_handle_ttml_fragment(
 		return ngx_http_vod_status_to_ngx_error(submodule_context->r, rc);
 	}
 
-	mp4_fragment_get_content_type(TRUE, content_type);
+	mp4_fragment_get_content_type(&submodule_context->media_set, content_type);
 	return NGX_OK;
 }
 

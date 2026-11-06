@@ -845,7 +845,7 @@ ngx_http_vod_hls_handle_mp4_init_segment(
 	}
 #endif // NGX_HAVE_OPENSSL_EVP
 
-	mp4_fragment_get_content_type(submodule_context->media_set.track_count[MEDIA_TYPE_VIDEO], content_type);
+	mp4_fragment_get_content_type(&submodule_context->media_set, content_type);
 	return NGX_OK;
 }
 
@@ -1047,7 +1047,7 @@ ngx_http_vod_hls_init_fmp4_frame_processor(
 #endif // NGX_HAVE_OPENSSL_EVP
 
 	// set the 'Content-type' header
-	mp4_fragment_get_content_type(submodule_context->media_set.track_count[MEDIA_TYPE_VIDEO], content_type);
+	mp4_fragment_get_content_type(&submodule_context->media_set, content_type);
 	return NGX_OK;
 }
 
