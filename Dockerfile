@@ -1,9 +1,24 @@
 # syntax=docker/dockerfile:1
 
-FROM alpine:3.24 AS build
+FROM alpine:3.24 AS base
+
+FROM base AS fetch
+
+COPY scripts/fetch_latest.sh /usr/local/bin/
+
+FROM fetch AS ffmpeg
 
 ARG FFMPEG_VERSION=9.0
+
+RUN fetch_latest.sh ffmpeg.org/releases ffmpeg-${FFMPEG_VERSION}
+
+FROM fetch AS nginx
+
 ARG NGINX_VERSION=1.31
+
+RUN fetch_latest.sh nginx.org/download nginx-${NGINX_VERSION}
+
+FROM base AS build
 
 RUN apk --no-cache add \
 		build-base \
@@ -15,15 +30,14 @@ RUN apk --no-cache add \
 		nasm \
 		fdk-aac-dev
 
-COPY scripts/fetch_latest.sh scripts/build_ffmpeg.sh /usr/local/bin/
-
-RUN fetch_latest.sh ffmpeg.org/releases ffmpeg-${FFMPEG_VERSION} \
-	&& fetch_latest.sh nginx.org/download nginx-${NGINX_VERSION}
+COPY scripts/build_ffmpeg.sh /usr/local/bin/
+COPY --from=ffmpeg /ffmpeg /ffmpeg
 
 WORKDIR /ffmpeg
 
 RUN build_ffmpeg.sh --prefix=/opt/ffmpeg && make install
 
+COPY --from=nginx /nginx /nginx
 COPY --exclude=sample --exclude=static . /nginx-vod-module
 
 WORKDIR /nginx
@@ -49,9 +63,7 @@ RUN case $TARGETARCH in amd64) : ${CC_OPT:=-mpopcnt}; esac \
 	&& make install \
 	&& rm /opt/nginx/conf/*.default /opt/nginx/conf/koi-* /opt/nginx/conf/win-utf
 
-FROM alpine:3.24 AS runtime
-
-LABEL maintainer="Diogo Azevedo <hi@dio-az.dev>"
+FROM base AS runtime
 
 RUN apk --no-cache add \
 		zlib \
