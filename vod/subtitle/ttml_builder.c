@@ -1,7 +1,4 @@
 #include "ttml_builder.h"
-#include "../mp4/mp4_defs.h"
-#include "../mp4/mp4_fragment.h"
-#include "../mp4/mp4_write_stream.h"
 
 // constants
 #define TTML_TIMESTAMP_FORMAT "%02uD:%02uD:%02uD.%03uD"
@@ -30,48 +27,6 @@
 	 + (sizeof(TTML_P_HEADER_PART3) - 1) \
 	 + TTML_TIMESTAMP_MAX_SIZE * 2       \
 	 + (sizeof(TTML_P_FOOTER) - 1))
-
-// typedefs
-typedef struct {
-	u_char version[1];
-	u_char flags[3];
-	u_char track_id[4];
-	u_char default_sample_duration[4];
-	u_char default_sample_size[4];
-} ttml_tfhd_atom_t;
-
-// globals
-// clang-format off
-static u_char trun_atom[] = {
-	0x00, 0x00, 0x00, 0x10, // size = 16
-	0x74, 0x72, 0x75, 0x6E, // trun
-	0x00,                   // version
-	0x00, 0x00, 0x00,       // flags
-	0x00, 0x00, 0x00, 0x01, // sample_count = 1
-};
-
-static u_char sdtp_atom[] = {
-	0x00, 0x00, 0x00, 0x0D, // size = 13
-	0x73, 0x64, 0x74, 0x70, // sdtp
-	0x00,                   // version
-	0x00, 0x00, 0x00,       // flags
-	0x2A, // is_leading(2) = 0 (unknown), sample_depends_on(2) = 2 (independent),
-	      // sample_is_depended_on(2) = 2 (disposable), sample_has_redundancy(2) = 2 (non-redundant)
-};
-// clang-format on
-
-static u_char*
-ttml_write_tfhd_atom(u_char* p, uint32_t default_sample_duration, u_char** default_sample_size) {
-	size_t atom_size = ATOM_HEADER_SIZE + sizeof(ttml_tfhd_atom_t);
-
-	write_atom_header(p, atom_size, 't', 'f', 'h', 'd');
-	write_fullbox_header(p, 0, 0x18); // flags = (default-sample-duration-present, default-sample-size-present)
-	write_be32(p, 1);                 // track_ID
-	write_be32(p, default_sample_duration);
-	*default_sample_size = p; // HACK: sample_size known at later stage
-	write_be32(p, 0);         // default_sample_size
-	return p;
-}
 
 static u_char*
 ttml_builder_write_timestamp(u_char* p, uint64_t timestamp) {
@@ -184,84 +139,4 @@ ttml_builder_write(media_set_t* media_set, u_char* p) {
 
 	p = vod_copy(p, TTML_FOOTER, sizeof(TTML_FOOTER) - 1);
 	return p;
-}
-
-vod_status_t
-ttml_build_mp4(
-	request_context_t* request_context,
-	media_set_t* media_set,
-	uint32_t segment_index,
-	uint32_t timescale,
-	vod_str_t* result
-) {
-	size_t traf_atom_size = ATOM_HEADER_SIZE
-	                      + ATOM_HEADER_SIZE
-	                      + sizeof(ttml_tfhd_atom_t)
-	                      + sizeof(trun_atom)
-	                      + sizeof(sdtp_atom);
-	size_t moof_atom_size = ATOM_HEADER_SIZE + ATOM_HEADER_SIZE + sizeof(mfhd_atom_t) + traf_atom_size;
-	size_t mdat_atom_size;
-	size_t ttml_size = ttml_builder_get_max_size(media_set);
-	size_t result_size = moof_atom_size
-	                   + ATOM_HEADER_SIZE // mdat
-	                   + ttml_size;
-	u_char* default_sample_size;
-	u_char* mdat_start;
-	u_char* p;
-
-	// allocate the buffer
-	p = vod_alloc(request_context->pool, result_size);
-	if (p == NULL) {
-		vod_log_debug0(VOD_LOG_DEBUG_LEVEL, request_context->log, 0, "ttml_build_mp4: vod_alloc failed");
-		return VOD_ALLOC_FAILED;
-	}
-
-	result->data = p;
-
-	// moof
-	write_atom_header(p, moof_atom_size, 'm', 'o', 'o', 'f');
-
-	// moof.mfhd
-	p = mp4_fragment_write_mfhd_atom(p, segment_index + 1);
-
-	// moof.traf
-	write_atom_header(p, traf_atom_size, 't', 'r', 'a', 'f');
-
-	// moof.traf.tfhd
-	p = ttml_write_tfhd_atom(
-		p, rescale_time(media_set->segment_duration, 1000, timescale), &default_sample_size
-	);
-
-	// moof.traf.trun
-	p = vod_copy(p, trun_atom, sizeof(trun_atom));
-
-	// moof.traf.sdtp
-	p = vod_copy(p, sdtp_atom, sizeof(sdtp_atom));
-
-	// mdat
-	mdat_start = p;
-	write_atom_header(p, 0, 'm', 'd', 'a', 't');
-	p = ttml_builder_write(media_set, p);
-
-	// update sizes
-	mdat_atom_size = p - mdat_start;
-	write_be32(mdat_start, mdat_atom_size);
-	mdat_atom_size -= ATOM_HEADER_SIZE;
-	write_be32(default_sample_size, mdat_atom_size);
-
-	result->len = p - result->data;
-
-	if (result->len > result_size) {
-		vod_log_error(
-			VOD_LOG_ERR,
-			request_context->log,
-			0,
-			"ttml_build_mp4: result length %uz exceeded allocated length %uz",
-			result->len,
-			result_size
-		);
-		return VOD_UNEXPECTED;
-	}
-
-	return VOD_OK;
 }
