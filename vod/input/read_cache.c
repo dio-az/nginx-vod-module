@@ -130,6 +130,7 @@ read_cache_get_read_buffer(read_cache_state_t* state, read_cache_get_read_buffer
 	result->source = target_buffer->source;
 	result->offset = target_buffer->start_offset;
 	result->buffer = state->reuse_buffers ? target_buffer->buffer_start : NULL;
+	result->buffer_end = state->reuse_buffers ? target_buffer->buffer_end : NULL;
 	result->size = target_buffer->buffer_size;
 }
 
@@ -140,6 +141,7 @@ read_cache_read_completed(read_cache_state_t* state, vod_buf_t* buf) {
 	// update the buffer size
 	target_buffer->buffer_start = buf->start;
 	target_buffer->buffer_pos = buf->pos;
+	target_buffer->buffer_end = buf->end;
 	target_buffer->buffer_size = buf->last - buf->pos;
 	target_buffer->end_offset = target_buffer->start_offset + target_buffer->buffer_size;
 

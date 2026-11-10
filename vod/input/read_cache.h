@@ -10,6 +10,7 @@ struct media_clip_source_s;
 typedef struct {
 	u_char* buffer_start;
 	u_char* buffer_pos;
+	u_char* buffer_end;   // end of the allocated buffer (its capacity), not of the data read
 	uint32_t buffer_size; // size of data read
 	void* source;         // opaque context that indicates from where the buffer should be read
 	uint64_t start_offset;
@@ -43,6 +44,7 @@ typedef struct {
 	struct media_clip_source_s* source;
 	uint64_t offset;
 	u_char* buffer;
+	u_char* buffer_end; // capacity of buffer, valid when buffer is not NULL
 	uint32_t size;
 } read_cache_get_read_buffer_t;
 
