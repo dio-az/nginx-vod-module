@@ -54,7 +54,7 @@ jobs:
           grep NGX_HAVE_LIB_AV_FILTER objs/ngx_auto_config.h
           grep NGX_HAVE_LIB_SW_SCALE objs/ngx_auto_config.h
           grep NGX_HAVE_LIBXML2 objs/ngx_auto_config.h
-      - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+      - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           category: language:c-cpp
           checkout_path: nginx-vod-module
@@ -69,6 +69,6 @@ jobs:
           languages: actions
           build-mode: none
           config-file: .github/codeql/codeql-config.yml
-      - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+      - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           category: language:actions
