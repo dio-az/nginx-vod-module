@@ -8,3 +8,7 @@ updates:
       prefix: ci
     labels:
       - ci
+    groups:
+      codeql-action:
+        patterns:
+          - github/codeql-action/*
