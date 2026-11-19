@@ -85,9 +85,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           version=$IMAGE:${GITHUB_REF_NAME#v}
-          variant=$version-nginx${{ inputs.nginx-version }}
+          suffix=nginx${{ inputs.nginx-version }}
+          variant=$version-$suffix
 
-          tags="-t $variant"
+          tags="-t $variant -t ${version%.*}-$suffix -t ${version%.*.*}-$suffix"
           if ${{ inputs.promote }}; then
             latest=$(gh api repos/$GITHUB_REPOSITORY/releases/latest --jq .tag_name)
             tags="$tags -t $version -t ${version%.*} -t ${version%.*.*}"
