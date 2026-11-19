@@ -14,7 +14,7 @@ RUN fetch_latest.sh ffmpeg.org/releases ffmpeg-${FFMPEG_VERSION}
 
 FROM fetch AS nginx
 
-ARG NGINX_VERSION=1.31
+ARG NGINX_VERSION=1.31.9
 
 RUN fetch_latest.sh nginx.org/download nginx-${NGINX_VERSION}
 
