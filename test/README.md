@@ -74,3 +74,16 @@ Test for the light bitset implementation. To execute the test, run:
 NGINX_SOURCE_DIR=/path/to/nginx NGINX_VOD_MODULE_SOURCE_DIR=/path/to/nginx-vod-module ./build.sh
 ./bitset_test
 ```
+
+### progressive
+
+Tests for the non-fragmented multi-clip mp4 builder (mp4_progressive_builder): the populated stbl
+sample tables (test_stbl_builder), the per-track chunk offset math (test_offsets), and the mdat
+streaming writer order (test_mdat_writer). To execute the tests, run:
+
+```sh
+NGINX_SOURCE_DIR=/path/to/nginx NGINX_VOD_MODULE_SOURCE_DIR=/path/to/nginx-vod-module ./build.sh
+./test_stbl_builder
+./test_offsets
+./test_mdat_writer
+```
